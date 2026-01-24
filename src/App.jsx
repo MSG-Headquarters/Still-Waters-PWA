@@ -526,16 +526,22 @@ const ChatScreen = ({ onNavigate, params }) => {
 
     const userMessage = { role: 'user', content: input, created_at: new Date().toISOString() };
     setMessages(prev => [...prev, userMessage]);
+    const messageContent = input;
     setInput('');
     setSending(true);
 
     try {
       const data = await request(`/conversations/${activeConvo.id}/messages`, {
         method: 'POST',
-        body: JSON.stringify({ content: input })
+        body: JSON.stringify({ content: messageContent })
       });
-      const aiMessage = data.message || data.response || data;
-      setMessages(prev => [...prev, { role: 'assistant', content: aiMessage.content || aiMessage, created_at: new Date().toISOString() }]);
+      // API returns { userMessage, assistantMessage, crisisLevel, flaggedForReview }
+      const aiMessage = data.assistantMessage || data.message || data.response || data;
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: aiMessage.content || aiMessage, 
+        created_at: aiMessage.created_at || new Date().toISOString() 
+      }]);
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => [...prev, { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again.', created_at: new Date().toISOString() }]);
