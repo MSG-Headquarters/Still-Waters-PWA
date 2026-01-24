@@ -446,17 +446,20 @@ const ChatScreen = ({ onNavigate, params }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
+  const hasStartedNewChat = useRef(false);
 
   useEffect(() => {
     loadConversations();
   }, []);
 
   useEffect(() => {
-    if (params?.newChat) {
+    if (params?.newChat && !hasStartedNewChat.current) {
+      hasStartedNewChat.current = true;
       startNewConversation();
     }
-  }, [params]);
+  }, [params?.newChat]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -465,9 +468,11 @@ const ChatScreen = ({ onNavigate, params }) => {
   const loadConversations = async () => {
     try {
       const data = await request('/conversations');
-      setConversations(data.conversations || data || []);
+      const convos = data?.conversations || (Array.isArray(data) ? data : []);
+      setConversations(convos);
     } catch (err) {
       console.error('Failed to load conversations:', err);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
@@ -475,12 +480,16 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const loadConversation = async (id) => {
     setLoading(true);
+    setError(null);
     try {
       const data = await request(`/conversations/${id}`);
-      setActiveConvo(data.conversation || data);
-      setMessages(data.messages || data.conversation?.messages || []);
+      const convo = data?.conversation || data;
+      setActiveConvo(convo);
+      const msgs = data?.messages || convo?.messages || [];
+      setMessages(Array.isArray(msgs) ? msgs : []);
     } catch (err) {
       console.error('Failed to load conversation:', err);
+      setError('Failed to load conversation');
     } finally {
       setLoading(false);
     }
@@ -488,17 +497,24 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const startNewConversation = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await request('/conversations', {
         method: 'POST',
         body: JSON.stringify({ title: 'New Conversation', initialMood: 'peaceful' })
       });
-      const newConvo = data.conversation || data;
-      setActiveConvo(newConvo);
-      setMessages([]);
-      setConversations(prev => [newConvo, ...prev]);
+      const newConvo = data?.conversation || data;
+      if (newConvo && newConvo.id) {
+        setActiveConvo(newConvo);
+        setMessages([]);
+        setConversations(prev => [newConvo, ...(Array.isArray(prev) ? prev : [])]);
+      } else {
+        throw new Error('Invalid conversation response');
+      }
     } catch (err) {
       console.error('Failed to create conversation:', err);
+      setError('Failed to create conversation. Please try again.');
+      hasStartedNewChat.current = false;
     } finally {
       setLoading(false);
     }
