@@ -38,6 +38,7 @@ const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Auth error:', err);
+      logout();
     } finally {
       setLoading(false);
     }
@@ -99,11 +100,16 @@ const useApi = () => {
       ...options.headers
     };
     
-    const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
-    const data = await res.json();
-    
-    if (!res.ok) throw new Error(data.message || 'Request failed');
-    return data;
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.message || 'Request failed');
+      return data;
+    } catch (err) {
+      console.error('API Error:', err);
+      throw err;
+    }
   };
 
   return { request };
@@ -208,20 +214,39 @@ const Icons = {
       <rect x="1" y="3" width="22" height="5"/>
       <line x1="10" y1="12" x2="14" y2="12"/>
     </svg>
+  ),
+  Cross: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="2" x2="12" y2="22"/>
+      <line x1="6" y1="6" x2="18" y2="6"/>
+    </svg>
   )
 };
 
 // ============================================
-// LOADING SPINNER
+// BRANDED LOADING SCREEN
 // ============================================
-const LoadingSpinner = ({ size = 'md' }) => {
-  const sizes = { sm: 'w-4 h-4', md: 'w-8 h-8', lg: 'w-12 h-12' };
+const LoadingScreen = ({ message = 'Loading...' }) => {
   return (
-    <div className={`${sizes[size]} animate-spin`}>
-      <svg viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2"/>
-        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-      </svg>
+    <div className="loading-screen">
+      <div className="loading-backdrop">
+        <img 
+          src="/still-waters-bg.png" 
+          alt="" 
+          className="loading-backdrop-image"
+        />
+        <div className="loading-backdrop-overlay"/>
+      </div>
+      <div className="loading-content">
+        <h1 className="loading-logo">
+          <span className="logo-still">Still</span>
+          <span className="logo-waters">Waters</span>
+        </h1>
+        <div className="loading-spinner-container">
+          <div className="loading-spinner"/>
+        </div>
+        <p className="loading-message">{message}</p>
+      </div>
     </div>
   );
 };
@@ -230,16 +255,14 @@ const LoadingSpinner = ({ size = 'md' }) => {
 // SPLASH SCREEN WITH AUTO-MORPH TO LOGIN
 // ============================================
 const SplashScreen = ({ onComplete }) => {
-  const [phase, setPhase] = useState('splash'); // 'splash' | 'morphing' | 'complete'
+  const [phase, setPhase] = useState('splash');
   const [wordsVisible, setWordsVisible] = useState([]);
   
   const titleWords = ['Still', 'Waters'];
   const taglineWords = ['Your', 'AI', 'Faith', 'Companion'];
 
   useEffect(() => {
-    // Phase 1: Show splash image (0-1.5s)
     const splashTimer = setTimeout(() => {
-      // Phase 2: Start word-by-word reveal (1.5s-4s)
       let wordIndex = 0;
       const allWords = [...titleWords, ...taglineWords];
       
@@ -249,10 +272,8 @@ const SplashScreen = ({ onComplete }) => {
           wordIndex++;
         } else {
           clearInterval(wordInterval);
-          // Phase 3: Morph to login after all words shown
           setTimeout(() => {
             setPhase('morphing');
-            // Complete transition
             setTimeout(() => {
               setPhase('complete');
               onComplete?.();
@@ -267,10 +288,9 @@ const SplashScreen = ({ onComplete }) => {
     return () => clearTimeout(splashTimer);
   }, []);
 
-  // Allow tap to skip
   const handleTap = () => {
     if (phase === 'splash') {
-      setWordsVisible([0, 1, 2, 3, 4, 5]); // Show all words
+      setWordsVisible([0, 1, 2, 3, 4, 5]);
       setPhase('morphing');
       setTimeout(() => {
         setPhase('complete');
@@ -280,52 +300,31 @@ const SplashScreen = ({ onComplete }) => {
   };
 
   return (
-    <div 
-      className={`splash-screen ${phase}`}
-      onClick={handleTap}
-    >
-      {/* Background Image */}
+    <div className={`splash-screen ${phase}`} onClick={handleTap}>
       <div className="splash-image-container">
-        <img 
-          src="/still-waters-bg.png" 
-          alt="Still Waters" 
-          className="splash-image"
-        />
+        <img src="/still-waters-bg.png" alt="Still Waters" className="splash-image"/>
         <div className="splash-overlay"/>
       </div>
-
-      {/* Animated Title */}
       <div className="splash-content">
         <h1 className="splash-title">
-          <span className={`splash-word still ${wordsVisible.includes(0) ? 'visible' : ''}`}>
-            Still
-          </span>
-          <span className={`splash-word waters ${wordsVisible.includes(1) ? 'visible' : ''}`}>
-            Waters
-          </span>
+          <span className={`splash-word still ${wordsVisible.includes(0) ? 'visible' : ''}`}>Still</span>
+          <span className={`splash-word waters ${wordsVisible.includes(1) ? 'visible' : ''}`}>Waters</span>
         </h1>
-        
         <p className="splash-tagline">
           {taglineWords.map((word, i) => (
-            <span 
-              key={i}
-              className={`splash-tagline-word ${wordsVisible.includes(i + 2) ? 'visible' : ''}`}
-            >
+            <span key={i} className={`splash-tagline-word ${wordsVisible.includes(i + 2) ? 'visible' : ''}`}>
               {word}{' '}
             </span>
           ))}
         </p>
-
-        {phase === 'splash' && (
-          <p className="splash-hint">Tap to continue</p>
-        )}
+        {phase === 'splash' && <p className="splash-hint">Tap to continue</p>}
       </div>
     </div>
   );
 };
 
 // ============================================
-// AUTH SCREEN - WITH MORPH TRANSITION
+// AUTH SCREEN
 // ============================================
 const AuthScreen = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -357,21 +356,14 @@ const AuthScreen = () => {
     }
   };
 
-  // Show splash screen first
   if (showSplash) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
   }
 
   return (
     <div className="auth-screen entered">
-      {/* Background Image */}
       <div className="auth-backdrop">
-        <img 
-          src="/still-waters-bg.png" 
-          alt="" 
-          className="auth-backdrop-image"
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
+        <img src="/still-waters-bg.png" alt="" className="auth-backdrop-image"/>
         <div className="auth-backdrop-overlay"/>
       </div>
       
@@ -424,7 +416,7 @@ const AuthScreen = () => {
           {error && <div className="auth-error">{error}</div>}
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? <LoadingSpinner size="sm"/> : (mode === 'login' ? 'Enter' : 'Begin Journey')}
+            {loading ? <div className="button-spinner"/> : (mode === 'login' ? 'Enter' : 'Begin Journey')}
           </button>
         </form>
 
@@ -443,26 +435,8 @@ const AuthScreen = () => {
 // ============================================
 // HOME SCREEN
 // ============================================
-const HomeScreen = ({ onNavigate }) => {
+const HomeScreen = ({ onNavigate, devotional, devotionalLoading }) => {
   const { user } = useAuth();
-  const { request } = useApi();
-  const [devotional, setDevotional] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadDevotional();
-  }, []);
-
-  const loadDevotional = async () => {
-    try {
-      const data = await request('/devotionals/today');
-      setDevotional(data.devotional || data);
-    } catch (err) {
-      console.error('Failed to load devotional:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -481,20 +455,19 @@ const HomeScreen = ({ onNavigate }) => {
       </div>
 
       <div className="home-content">
-        {/* Daily Devotional Card */}
         <section className="devotional-card" onClick={() => onNavigate('devotional')}>
           <div className="card-glow"/>
           <div className="card-header">
             <span className="card-icon"><Icons.Sun/></span>
             <span className="card-label">Today's Devotional</span>
           </div>
-          {loading ? (
-            <div className="card-loading"><LoadingSpinner/></div>
+          {devotionalLoading ? (
+            <div className="card-loading"><div className="small-spinner"/></div>
           ) : devotional ? (
             <>
               <h2 className="devotional-title">{devotional.title}</h2>
-              <p className="devotional-scripture">{devotional.scripture_reference || devotional.scriptureReference}</p>
-              <p className="devotional-preview">{devotional.reflection?.substring(0, 120)}...</p>
+              <p className="devotional-scripture">{devotional.scripture_reference}</p>
+              <p className="devotional-preview">{devotional.reflection?.substring(0, 100)}...</p>
             </>
           ) : (
             <p className="devotional-preview">Unable to load today's devotional</p>
@@ -502,7 +475,6 @@ const HomeScreen = ({ onNavigate }) => {
           <span className="card-action">Read more →</span>
         </section>
 
-        {/* Quick Actions */}
         <section className="quick-actions">
           <h3>Begin</h3>
           <div className="action-grid">
@@ -532,11 +504,8 @@ const HomeScreen = ({ onNavigate }) => {
           </div>
         </section>
 
-        {/* Scripture of the Day */}
         <section className="scripture-card">
-          <blockquote>
-            "He leads me beside still waters. He restores my soul."
-          </blockquote>
+          <blockquote>"He leads me beside still waters. He restores my soul."</blockquote>
           <cite>— Psalm 23:2-3 ESV</cite>
         </section>
       </div>
@@ -545,30 +514,24 @@ const HomeScreen = ({ onNavigate }) => {
 };
 
 // ============================================
-// HELPER: Format date safely
+// HELPERS
 // ============================================
 const formatDate = (dateString) => {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '';
-    
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
-    
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
     return '';
   }
 };
 
-// ============================================
-// HELPER: Generate conversation title from first message
-// ============================================
 const generateTitle = (content) => {
   if (!content) return 'New Conversation';
   const maxLen = 40;
@@ -590,14 +553,12 @@ const ChatScreen = ({ onNavigate, params }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState(null);
   const [showTrash, setShowTrash] = useState(false);
   const messagesEndRef = useRef(null);
   const hasStartedNewChat = useRef(false);
 
   useEffect(() => {
     loadConversations();
-    loadDeletedConversations();
   }, []);
 
   useEffect(() => {
@@ -616,6 +577,7 @@ const ChatScreen = ({ onNavigate, params }) => {
       const data = await request('/conversations');
       const convos = data?.conversations || (Array.isArray(data) ? data : []);
       setConversations(convos.filter(c => !c.deleted_at));
+      setDeletedConversations(convos.filter(c => c.deleted_at));
     } catch (err) {
       console.error('Failed to load conversations:', err);
       setConversations([]);
@@ -624,19 +586,8 @@ const ChatScreen = ({ onNavigate, params }) => {
     }
   };
 
-  const loadDeletedConversations = async () => {
-    try {
-      const data = await request('/conversations?deleted=true');
-      const convos = data?.conversations || (Array.isArray(data) ? data : []);
-      setDeletedConversations(convos.filter(c => c.deleted_at));
-    } catch (err) {
-      console.log('Deleted conversations not available');
-    }
-  };
-
   const loadConversation = async (id) => {
     setLoading(true);
-    setError(null);
     try {
       const data = await request(`/conversations/${id}`);
       const convo = data?.conversation || data;
@@ -645,7 +596,6 @@ const ChatScreen = ({ onNavigate, params }) => {
       setMessages(Array.isArray(msgs) ? msgs : []);
     } catch (err) {
       console.error('Failed to load conversation:', err);
-      setError('Failed to load conversation');
     } finally {
       setLoading(false);
     }
@@ -653,23 +603,19 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const startNewConversation = async () => {
     setLoading(true);
-    setError(null);
     try {
       const data = await request('/conversations', {
         method: 'POST',
         body: JSON.stringify({ title: 'New Conversation', initialMood: 'peaceful' })
       });
       const newConvo = data?.conversation || data;
-      if (newConvo && newConvo.id) {
+      if (newConvo?.id) {
         setActiveConvo(newConvo);
         setMessages([]);
-        setConversations(prev => [newConvo, ...(Array.isArray(prev) ? prev : [])]);
-      } else {
-        throw new Error('Invalid conversation response');
+        setConversations(prev => [newConvo, ...prev]);
       }
     } catch (err) {
       console.error('Failed to create conversation:', err);
-      setError('Failed to create conversation. Please try again.');
       hasStartedNewChat.current = false;
     } finally {
       setLoading(false);
@@ -712,12 +658,15 @@ const ChatScreen = ({ onNavigate, params }) => {
             c.id === activeConvo.id ? { ...c, title: newTitle } : c
           ));
         } catch (err) {
-          console.log('Could not update title:', err);
+          console.log('Could not update title');
         }
       }
     } catch (err) {
-      console.error('Failed to send message:', err);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again.', created_at: new Date().toISOString() }]);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'I apologize, but I encountered an error. Please try again.', 
+        created_at: new Date().toISOString() 
+      }]);
     } finally {
       setSending(false);
     }
@@ -729,18 +678,16 @@ const ChatScreen = ({ onNavigate, params }) => {
         method: 'PATCH',
         body: JSON.stringify({ deleted_at: new Date().toISOString() })
       });
-      
       const deleted = conversations.find(c => c.id === id);
       if (deleted) {
         setDeletedConversations(prev => [{ ...deleted, deleted_at: new Date().toISOString() }, ...prev]);
       }
       setConversations(prev => prev.filter(c => c.id !== id));
-      
       if (activeConvo?.id === id) {
         setActiveConvo(null);
         setMessages([]);
       }
-    } catch (err) {
+    } catch {
       try {
         await request(`/conversations/${id}`, { method: 'DELETE' });
         setConversations(prev => prev.filter(c => c.id !== id));
@@ -748,8 +695,8 @@ const ChatScreen = ({ onNavigate, params }) => {
           setActiveConvo(null);
           setMessages([]);
         }
-      } catch (err2) {
-        console.error('Failed to delete conversation:', err2);
+      } catch (err) {
+        console.error('Failed to delete:', err);
       }
     }
   };
@@ -760,14 +707,13 @@ const ChatScreen = ({ onNavigate, params }) => {
         method: 'PATCH',
         body: JSON.stringify({ deleted_at: null })
       });
-      
       const restored = deletedConversations.find(c => c.id === id);
       if (restored) {
         setConversations(prev => [{ ...restored, deleted_at: null }, ...prev]);
       }
       setDeletedConversations(prev => prev.filter(c => c.id !== id));
     } catch (err) {
-      console.error('Failed to restore conversation:', err);
+      console.error('Failed to restore:', err);
     }
   };
 
@@ -776,7 +722,7 @@ const ChatScreen = ({ onNavigate, params }) => {
       await request(`/conversations/${id}`, { method: 'DELETE' });
       setDeletedConversations(prev => prev.filter(c => c.id !== id));
     } catch (err) {
-      console.error('Failed to permanently delete:', err);
+      console.error('Failed to delete:', err);
     }
   };
 
@@ -784,22 +730,14 @@ const ChatScreen = ({ onNavigate, params }) => {
     return (
       <div className="chat-screen">
         <div className="chat-header">
-          <button className="icon-button" onClick={() => setShowTrash(false)}>
-            <Icons.ArrowLeft/>
-          </button>
+          <button className="icon-button" onClick={() => setShowTrash(false)}><Icons.ArrowLeft/></button>
           <h1>Recently Deleted</h1>
           <div style={{ width: 40 }}/>
         </div>
-
-        <div className="trash-notice">
-          <p>Conversations are permanently deleted after 30 days</p>
-        </div>
-
+        <div className="trash-notice"><p>Conversations are permanently deleted after 30 days</p></div>
         <div className="conversation-list">
           {deletedConversations.length === 0 ? (
-            <div className="empty-state">
-              <p>No deleted conversations</p>
-            </div>
+            <div className="empty-state"><p>No deleted conversations</p></div>
           ) : (
             deletedConversations.map(convo => (
               <div key={convo.id} className="conversation-item deleted">
@@ -808,12 +746,8 @@ const ChatScreen = ({ onNavigate, params }) => {
                   <p>Deleted {formatDate(convo.deleted_at)}</p>
                 </div>
                 <div className="convo-actions">
-                  <button className="restore-button" onClick={() => restoreConversation(convo.id)} title="Restore">
-                    <Icons.Restore/>
-                  </button>
-                  <button className="delete-button permanent" onClick={() => permanentlyDelete(convo.id)} title="Delete Forever">
-                    <Icons.Trash/>
-                  </button>
+                  <button className="restore-button" onClick={() => restoreConversation(convo.id)}><Icons.Restore/></button>
+                  <button className="delete-button permanent" onClick={() => permanentlyDelete(convo.id)}><Icons.Trash/></button>
                 </div>
               </div>
             ))
@@ -828,26 +762,21 @@ const ChatScreen = ({ onNavigate, params }) => {
       <div className="chat-screen">
         <div className="chat-header">
           <h1>Conversations</h1>
-          <button className="icon-button" onClick={startNewConversation}>
-            <Icons.Plus/>
-          </button>
+          <button className="icon-button" onClick={startNewConversation}><Icons.Plus/></button>
         </div>
-
         <div className="conversation-list">
           {loading ? (
-            <div className="loading-state"><LoadingSpinner/></div>
+            <div className="loading-state"><div className="small-spinner"/></div>
           ) : conversations.length === 0 ? (
             <div className="empty-state">
               <p>No conversations yet</p>
-              <button className="start-button" onClick={startNewConversation}>
-                Start Your First Conversation
-              </button>
+              <button className="start-button" onClick={startNewConversation}>Start Your First Conversation</button>
             </div>
           ) : (
             conversations.map(convo => (
               <div key={convo.id} className="conversation-item" onClick={() => loadConversation(convo.id)}>
                 <div className="convo-info">
-                  <h3>{convo.title || 'Conversation'}</h3>
+                  <h3>{convo.title || 'New Conversation'}</h3>
                   <p>{formatDate(convo.updated_at || convo.created_at)}</p>
                 </div>
                 <button className="delete-button" onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}>
@@ -857,7 +786,6 @@ const ChatScreen = ({ onNavigate, params }) => {
             ))
           )}
         </div>
-
         {deletedConversations.length > 0 && (
           <button className="trash-link" onClick={() => setShowTrash(true)}>
             <Icons.Archive/> Recently Deleted ({deletedConversations.length})
@@ -870,7 +798,7 @@ const ChatScreen = ({ onNavigate, params }) => {
   return (
     <div className="chat-screen active">
       <div className="chat-header">
-        <button className="icon-button" onClick={() => { setActiveConvo(null); setMessages([]); }}>
+        <button className="icon-button" onClick={() => { setActiveConvo(null); setMessages([]); hasStartedNewChat.current = false; }}>
           <Icons.ArrowLeft/>
         </button>
         <h1>{activeConvo.title || 'Conversation'}</h1>
@@ -880,7 +808,7 @@ const ChatScreen = ({ onNavigate, params }) => {
       <div className="messages-container">
         {messages.length === 0 && !loading && (
           <div className="welcome-message">
-            <div className="welcome-icon">✝</div>
+            <div className="welcome-icon"><Icons.Cross/></div>
             <h2>Peace be with you</h2>
             <p>Share what's on your heart. I'm here to listen, offer scripture, and walk alongside you in faith.</p>
           </div>
@@ -894,9 +822,7 @@ const ChatScreen = ({ onNavigate, params }) => {
         
         {sending && (
           <div className="message assistant">
-            <div className="message-content typing">
-              <span/><span/><span/>
-            </div>
+            <div className="message-content typing"><span/><span/><span/></div>
           </div>
         )}
         <div ref={messagesEndRef}/>
@@ -910,9 +836,7 @@ const ChatScreen = ({ onNavigate, params }) => {
           placeholder="Share what's on your heart..."
           disabled={sending}
         />
-        <button type="submit" disabled={!input.trim() || sending}>
-          <Icons.Send/>
-        </button>
+        <button type="submit" disabled={!input.trim() || sending}><Icons.Send/></button>
       </form>
     </div>
   );
@@ -921,31 +845,17 @@ const ChatScreen = ({ onNavigate, params }) => {
 // ============================================
 // DEVOTIONAL SCREEN
 // ============================================
-const DevotionalScreen = ({ onNavigate }) => {
+const DevotionalScreen = ({ devotional, loading }) => {
   const { request } = useApi();
-  const [devotional, setDevotional] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
-
-  useEffect(() => {
-    loadDevotional();
-  }, []);
-
-  const loadDevotional = async () => {
-    try {
-      const data = await request('/devotionals/today');
-      setDevotional(data.devotional || data);
-    } catch (err) {
-      console.error('Failed to load devotional:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const markComplete = async () => {
     if (!devotional) return;
     try {
-      await request(`/devotionals/${devotional.id}/log`, { method: 'POST' });
+      await request(`/devotionals/${devotional.id}/log`, { 
+        method: 'POST',
+        body: JSON.stringify({ completed: true })
+      });
       setCompleted(true);
     } catch (err) {
       console.error('Failed to log devotional:', err);
@@ -953,19 +863,13 @@ const DevotionalScreen = ({ onNavigate }) => {
   };
 
   if (loading) {
-    return (
-      <div className="devotional-screen">
-        <div className="loading-state"><LoadingSpinner size="lg"/></div>
-      </div>
-    );
+    return <LoadingScreen message="Loading devotional..."/>;
   }
 
   if (!devotional) {
     return (
       <div className="devotional-screen">
-        <div className="empty-state">
-          <p>Unable to load today's devotional</p>
-        </div>
+        <div className="empty-state"><p>Unable to load today's devotional</p></div>
       </div>
     );
   }
@@ -978,30 +882,36 @@ const DevotionalScreen = ({ onNavigate }) => {
       </div>
 
       <div className="devotional-content">
-        <section className="scripture-section">
-          <div className="section-icon">📖</div>
-          <h2>Scripture</h2>
-          <blockquote className="scripture-text">
-            {devotional.scripture_reference || devotional.scriptureReference}
-          </blockquote>
+        <section className="devo-section">
+          <div className="section-header">
+            <span className="section-icon">📖</span>
+            <h2>Scripture</h2>
+          </div>
+          <blockquote className="scripture-quote">{devotional.scripture_reference}</blockquote>
         </section>
 
-        <section className="reflection-section">
-          <div className="section-icon">💭</div>
-          <h2>Reflection</h2>
+        <section className="devo-section">
+          <div className="section-header">
+            <span className="section-icon">💭</span>
+            <h2>Reflection</h2>
+          </div>
           <p>{devotional.reflection}</p>
         </section>
 
-        <section className="prayer-section">
-          <div className="section-icon">🙏</div>
-          <h2>Prayer Prompt</h2>
-          <p>{devotional.prayer_prompt || devotional.prayerPrompt}</p>
+        <section className="devo-section">
+          <div className="section-header">
+            <span className="section-icon">🙏</span>
+            <h2>Prayer Prompt</h2>
+          </div>
+          <p>{devotional.prayer_prompt}</p>
         </section>
 
-        <section className="action-section">
-          <div className="section-icon">✨</div>
-          <h2>Today's Action</h2>
-          <p>{devotional.action_step || devotional.actionStep}</p>
+        <section className="devo-section">
+          <div className="section-header">
+            <span className="section-icon">✨</span>
+            <h2>Today's Action</h2>
+          </div>
+          <p>{devotional.action_step}</p>
         </section>
 
         <button 
@@ -1009,11 +919,7 @@ const DevotionalScreen = ({ onNavigate }) => {
           onClick={markComplete}
           disabled={completed}
         >
-          {completed ? (
-            <><Icons.Check/> Completed</>
-          ) : (
-            'Mark as Complete'
-          )}
+          {completed ? <><Icons.Check/> Completed</> : 'Mark as Complete'}
         </button>
       </div>
     </div>
@@ -1021,15 +927,17 @@ const DevotionalScreen = ({ onNavigate }) => {
 };
 
 // ============================================
-// SCRIPTURES SCREEN
+// SCRIPTURES SCREEN - MODERNIZED
 // ============================================
-const ScripturesScreen = ({ onNavigate }) => {
+const ScripturesScreen = () => {
   const { request } = useApi();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [view, setView] = useState('topics');
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   useEffect(() => {
     loadTopics();
@@ -1041,6 +949,21 @@ const ScripturesScreen = ({ onNavigate }) => {
       setTopics(data.topics || data || []);
     } catch (err) {
       console.error('Failed to load topics:', err);
+      // Fallback topics
+      setTopics([
+        { id: 1, name: 'Anxiety' }, { id: 2, name: 'Depression' }, 
+        { id: 3, name: 'Faith' }, { id: 4, name: 'Fear' },
+        { id: 5, name: 'Forgiveness' }, { id: 6, name: 'Grace' },
+        { id: 7, name: 'Gratitude' }, { id: 8, name: 'Grief' },
+        { id: 9, name: 'Guidance' }, { id: 10, name: 'Hope' },
+        { id: 11, name: 'Identity' }, { id: 12, name: 'Joy' },
+        { id: 13, name: 'Loneliness' }, { id: 14, name: 'Love' },
+        { id: 15, name: 'Peace' }, { id: 16, name: 'Prayer' },
+        { id: 17, name: 'Purpose' }, { id: 18, name: 'Salvation' },
+        { id: 19, name: 'Strength' }, { id: 20, name: 'Trust' }
+      ]);
+    } finally {
+      setInitialLoading(false);
     }
   };
 
@@ -1050,56 +973,67 @@ const ScripturesScreen = ({ onNavigate }) => {
     
     setLoading(true);
     setView('search');
+    setSelectedTopic(null);
     try {
       const data = await request(`/scriptures/search?q=${encodeURIComponent(query)}`);
       setResults(data.verses || data.results || data || []);
     } catch (err) {
       console.error('Search failed:', err);
+      setResults([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadTopicVerses = async (topicId) => {
+  const loadTopicVerses = async (topic) => {
     setLoading(true);
     setView('search');
+    setSelectedTopic(topic.name);
     try {
-      const data = await request(`/scriptures/topics/${topicId}`);
+      const data = await request(`/scriptures/topics/${topic.id}`);
       setResults(data.verses || data || []);
     } catch (err) {
       console.error('Failed to load topic verses:', err);
+      setResults([]);
     } finally {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return <LoadingScreen message="Loading scriptures..."/>;
+  }
 
   return (
     <div className="scriptures-screen">
       <div className="scriptures-header">
         <h1>Scripture Search</h1>
-        <form className="search-form" onSubmit={searchScriptures}>
-          <div className="search-input-wrapper">
-            <Icons.Search/>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search verses or topics..."
-            />
-          </div>
-        </form>
+        <p className="scriptures-subtitle">Find verses that speak to your heart</p>
       </div>
+
+      <form className="search-form" onSubmit={searchScriptures}>
+        <div className="search-input-wrapper">
+          <Icons.Search/>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by topic, keyword, or reference..."
+          />
+        </div>
+        <button type="submit" className="search-submit" disabled={!query.trim()}>Search</button>
+      </form>
 
       <div className="scriptures-content">
         {view === 'topics' && (
-          <div className="topics-grid">
+          <div className="topics-section">
             <h2>Browse by Topic</h2>
-            <div className="topics-list">
+            <div className="topics-grid">
               {topics.map(topic => (
                 <button 
                   key={topic.id} 
                   className="topic-chip"
-                  onClick={() => loadTopicVerses(topic.id)}
+                  onClick={() => loadTopicVerses(topic)}
                 >
                   {topic.name}
                 </button>
@@ -1110,12 +1044,14 @@ const ScripturesScreen = ({ onNavigate }) => {
 
         {view === 'search' && (
           <div className="search-results">
-            <button className="back-link" onClick={() => setView('topics')}>
+            <button className="back-link" onClick={() => { setView('topics'); setResults([]); setSelectedTopic(null); }}>
               ← Back to Topics
             </button>
             
+            {selectedTopic && <h2 className="results-title">Verses about {selectedTopic}</h2>}
+            
             {loading ? (
-              <div className="loading-state"><LoadingSpinner/></div>
+              <div className="loading-state"><div className="small-spinner"/></div>
             ) : results.length === 0 ? (
               <div className="empty-state">
                 <p>No verses found. Try a different search term.</p>
@@ -1140,7 +1076,7 @@ const ScripturesScreen = ({ onNavigate }) => {
 // ============================================
 // PRAYERS SCREEN
 // ============================================
-const PrayersScreen = ({ onNavigate }) => {
+const PrayersScreen = () => {
   const { request } = useApi();
   const [prayers, setPrayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1171,11 +1107,7 @@ const PrayersScreen = ({ onNavigate }) => {
     try {
       await request('/prayers/requests', {
         method: 'POST',
-        body: JSON.stringify({ 
-          content: newPrayer, 
-          visibility, 
-          isAnonymous 
-        })
+        body: JSON.stringify({ content: newPrayer, visibility, isAnonymous })
       });
       setNewPrayer('');
       setShowForm(false);
@@ -1196,13 +1128,15 @@ const PrayersScreen = ({ onNavigate }) => {
     }
   };
 
+  if (loading) {
+    return <LoadingScreen message="Loading prayers..."/>;
+  }
+
   return (
     <div className="prayers-screen">
       <div className="prayers-header">
         <h1>Prayer Wall</h1>
-        <button className="icon-button" onClick={() => setShowForm(!showForm)}>
-          <Icons.Plus/>
-        </button>
+        <button className="icon-button" onClick={() => setShowForm(!showForm)}><Icons.Plus/></button>
       </div>
 
       {showForm && (
@@ -1219,11 +1153,7 @@ const PrayersScreen = ({ onNavigate }) => {
               <option value="private">Keep Private</option>
             </select>
             <label className="checkbox-label">
-              <input 
-                type="checkbox" 
-                checked={isAnonymous} 
-                onChange={(e) => setIsAnonymous(e.target.checked)}
-              />
+              <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)}/>
               Post Anonymously
             </label>
           </div>
@@ -1232,12 +1162,8 @@ const PrayersScreen = ({ onNavigate }) => {
       )}
 
       <div className="prayers-list">
-        {loading ? (
-          <div className="loading-state"><LoadingSpinner/></div>
-        ) : prayers.length === 0 ? (
-          <div className="empty-state">
-            <p>No prayer requests yet. Be the first to share.</p>
-          </div>
+        {prayers.length === 0 ? (
+          <div className="empty-state"><p>No prayer requests yet. Be the first to share.</p></div>
         ) : (
           prayers.map(prayer => (
             <div key={prayer.id} className="prayer-card">
@@ -1265,7 +1191,7 @@ const PrayersScreen = ({ onNavigate }) => {
 // ============================================
 // PROFILE SCREEN
 // ============================================
-const ProfileScreen = ({ onNavigate }) => {
+const ProfileScreen = () => {
   const { user, logout, fetchUser } = useAuth();
   const { request } = useApi();
   const [editing, setEditing] = useState(false);
@@ -1303,13 +1229,8 @@ const ProfileScreen = ({ onNavigate }) => {
             <div className="edit-form">
               <div className="form-group">
                 <label>Display Name</label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                />
+                <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}/>
               </div>
-              
               <div className="form-group">
                 <label>Preferred Bible Version</label>
                 <select value={bibleVersion} onChange={(e) => setBibleVersion(e.target.value)}>
@@ -1320,7 +1241,6 @@ const ProfileScreen = ({ onNavigate }) => {
                   <option value="NLT">NLT</option>
                 </select>
               </div>
-
               <div className="button-group">
                 <button className="secondary-button" onClick={() => setEditing(false)}>Cancel</button>
                 <button className="primary-button" onClick={saveProfile}>Save</button>
@@ -1332,18 +1252,13 @@ const ProfileScreen = ({ onNavigate }) => {
                 <span>Bible Version</span>
                 <span>{user?.preferred_bible_version || 'ESV'}</span>
               </div>
-              <button className="edit-button" onClick={() => setEditing(true)}>
-                Edit Profile
-              </button>
+              <button className="edit-button" onClick={() => setEditing(true)}>Edit Profile</button>
             </div>
           )}
         </section>
 
         <section className="danger-zone">
-          <button className="logout-button" onClick={logout}>
-            <Icons.Logout/>
-            Sign Out
-          </button>
+          <button className="logout-button" onClick={logout}><Icons.Logout/> Sign Out</button>
         </section>
       </div>
     </div>
@@ -1351,15 +1266,14 @@ const ProfileScreen = ({ onNavigate }) => {
 };
 
 // ============================================
-// NAVIGATION
+// NAVIGATION - FIXED FOR MOBILE
 // ============================================
 const Navigation = ({ active, onNavigate }) => {
   const items = [
     { id: 'home', icon: Icons.Home, label: 'Home' },
     { id: 'chat', icon: Icons.Chat, label: 'Chat' },
-    { id: 'devotional', icon: Icons.Sun, label: 'Devotional' },
-    { id: 'scriptures', icon: Icons.Book, label: 'Scripture' },
-    { id: 'prayers', icon: Icons.Heart, label: 'Prayers' },
+    { id: 'devotional', icon: Icons.Sun, label: 'Daily' },
+    { id: 'scriptures', icon: Icons.Book, label: 'Bible' },
     { id: 'profile', icon: Icons.User, label: 'Profile' }
   ];
 
@@ -1384,8 +1298,28 @@ const Navigation = ({ active, onNavigate }) => {
 // ============================================
 const AppContent = () => {
   const { user, loading } = useAuth();
+  const { request } = useApi();
   const [screen, setScreen] = useState('home');
   const [screenParams, setScreenParams] = useState(null);
+  const [devotional, setDevotional] = useState(null);
+  const [devotionalLoading, setDevotionalLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadDevotional();
+    }
+  }, [user]);
+
+  const loadDevotional = async () => {
+    try {
+      const data = await request('/devotionals/today');
+      setDevotional(data.devotional || data);
+    } catch (err) {
+      console.error('Failed to load devotional:', err);
+    } finally {
+      setDevotionalLoading(false);
+    }
+  };
 
   const navigate = (newScreen, params = null) => {
     setScreen(newScreen);
@@ -1393,12 +1327,7 @@ const AppContent = () => {
   };
 
   if (loading) {
-    return (
-      <div className="app-loading">
-        <LoadingSpinner size="lg"/>
-        <p>Loading Still Waters...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading Still Waters..."/>;
   }
 
   if (!user) {
@@ -1407,21 +1336,19 @@ const AppContent = () => {
 
   const renderScreen = () => {
     switch (screen) {
-      case 'home': return <HomeScreen onNavigate={navigate}/>;
+      case 'home': return <HomeScreen onNavigate={navigate} devotional={devotional} devotionalLoading={devotionalLoading}/>;
       case 'chat': return <ChatScreen onNavigate={navigate} params={screenParams}/>;
-      case 'devotional': return <DevotionalScreen onNavigate={navigate}/>;
-      case 'scriptures': return <ScripturesScreen onNavigate={navigate}/>;
-      case 'prayers': return <PrayersScreen onNavigate={navigate}/>;
-      case 'profile': return <ProfileScreen onNavigate={navigate}/>;
-      default: return <HomeScreen onNavigate={navigate}/>;
+      case 'devotional': return <DevotionalScreen devotional={devotional} loading={devotionalLoading}/>;
+      case 'scriptures': return <ScripturesScreen/>;
+      case 'prayers': return <PrayersScreen/>;
+      case 'profile': return <ProfileScreen/>;
+      default: return <HomeScreen onNavigate={navigate} devotional={devotional} devotionalLoading={devotionalLoading}/>;
     }
   };
 
   return (
     <div className="app-container">
-      <main className="app-main">
-        {renderScreen()}
-      </main>
+      <main className="app-main">{renderScreen()}</main>
       <Navigation active={screen} onNavigate={navigate}/>
     </div>
   );
