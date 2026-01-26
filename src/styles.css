@@ -509,6 +509,58 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 
 .convo-actions { display: flex; gap: var(--space-xs); }
 
+.edit-title-input {
+  width: 100%;
+  padding: var(--space-sm);
+  background: rgba(245,240,225,0.1);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.edit-title-input:focus {
+  outline: none;
+  border-color: var(--gold-light);
+}
+
+.edit-button-small {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.edit-button-small:hover {
+  color: var(--gold);
+  background: rgba(196,169,98,0.1);
+}
+
+.edit-button-small svg {
+  width: 16px;
+  height: 16px;
+}
+
+.save-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: #4a9d6a;
+  background: rgba(74,157,106,0.1);
+}
+
+.save-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 .delete-button, .restore-button {
   width: 36px;
   height: 36px;

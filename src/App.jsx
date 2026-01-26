@@ -202,6 +202,12 @@ const Icons = {
       <polyline points="20,6 9,17 4,12"/>
     </svg>
   ),
+  Edit: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  ),
   Restore: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -554,6 +560,8 @@ const ChatScreen = ({ onNavigate, params }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
   const messagesEndRef = useRef(null);
   const hasStartedNewChat = useRef(false);
 
@@ -732,6 +740,41 @@ const ChatScreen = ({ onNavigate, params }) => {
     }
   };
 
+  const startEditing = (convo, e) => {
+    e.stopPropagation();
+    setEditingId(convo.id);
+    setEditTitle(convo.title || 'New Conversation');
+  };
+
+  const saveTitle = async (id, e) => {
+    e?.stopPropagation();
+    if (!editTitle.trim()) {
+      setEditingId(null);
+      return;
+    }
+    try {
+      await request(`/conversations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title: editTitle.trim() })
+      });
+      setConversations(prev => prev.map(c => 
+        c.id === id ? { ...c, title: editTitle.trim() } : c
+      ));
+    } catch (err) {
+      console.error('Failed to rename:', err);
+    } finally {
+      setEditingId(null);
+    }
+  };
+
+  const handleEditKeyDown = (id, e) => {
+    if (e.key === 'Enter') {
+      saveTitle(id, e);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+    }
+  };
+
   if (showTrash) {
     return (
       <div className="chat-screen">
@@ -780,14 +823,40 @@ const ChatScreen = ({ onNavigate, params }) => {
             </div>
           ) : (
             conversations.map(convo => (
-              <div key={convo.id} className="conversation-item" onClick={() => loadConversation(convo.id)}>
+              <div key={convo.id} className="conversation-item" onClick={() => !editingId && loadConversation(convo.id)}>
                 <div className="convo-info">
-                  <h3>{convo.title || 'New Conversation'}</h3>
-                  <p>{formatDate(convo.updated_at || convo.created_at)}</p>
+                  {editingId === convo.id ? (
+                    <input
+                      type="text"
+                      className="edit-title-input"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => handleEditKeyDown(convo.id, e)}
+                      onBlur={(e) => saveTitle(convo.id, e)}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  ) : (
+                    <>
+                      <h3>{convo.title || 'New Conversation'}</h3>
+                      <p>{formatDate(convo.updated_at || convo.created_at)}</p>
+                    </>
+                  )}
                 </div>
-                <button className="delete-button" onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}>
-                  <Icons.Trash/>
-                </button>
+                <div className="convo-actions">
+                  {editingId === convo.id ? (
+                    <button className="save-button" onClick={(e) => saveTitle(convo.id, e)}>
+                      <Icons.Check/>
+                    </button>
+                  ) : (
+                    <button className="edit-button-small" onClick={(e) => startEditing(convo, e)}>
+                      <Icons.Edit/>
+                    </button>
+                  )}
+                  <button className="delete-button" onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}>
+                    <Icons.Trash/>
+                  </button>
+                </div>
               </div>
             ))
           )}
