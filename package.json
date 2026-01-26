@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npx vite build",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "npx vite preview --host 0.0.0.0 --port $PORT"
   },
   "dependencies": {
     "react": "^18.2.0",
