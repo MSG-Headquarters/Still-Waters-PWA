@@ -195,6 +195,19 @@ const Icons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20,6 9,17 4,12"/>
     </svg>
+  ),
+  Restore: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+      <path d="M3 3v5h5"/>
+    </svg>
+  ),
+  Archive: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="21,8 21,21 3,21 3,8"/>
+      <rect x="1" y="3" width="22" height="5"/>
+      <line x1="10" y1="12" x2="14" y2="12"/>
+    </svg>
   )
 };
 
@@ -214,9 +227,108 @@ const LoadingSpinner = ({ size = 'md' }) => {
 };
 
 // ============================================
-// AUTH SCREENS
+// SPLASH SCREEN WITH AUTO-MORPH TO LOGIN
+// ============================================
+const SplashScreen = ({ onComplete }) => {
+  const [phase, setPhase] = useState('splash'); // 'splash' | 'morphing' | 'complete'
+  const [wordsVisible, setWordsVisible] = useState([]);
+  
+  const titleWords = ['Still', 'Waters'];
+  const taglineWords = ['Your', 'AI', 'Faith', 'Companion'];
+
+  useEffect(() => {
+    // Phase 1: Show splash image (0-1.5s)
+    const splashTimer = setTimeout(() => {
+      // Phase 2: Start word-by-word reveal (1.5s-4s)
+      let wordIndex = 0;
+      const allWords = [...titleWords, ...taglineWords];
+      
+      const wordInterval = setInterval(() => {
+        if (wordIndex < allWords.length) {
+          setWordsVisible(prev => [...prev, wordIndex]);
+          wordIndex++;
+        } else {
+          clearInterval(wordInterval);
+          // Phase 3: Morph to login after all words shown
+          setTimeout(() => {
+            setPhase('morphing');
+            // Complete transition
+            setTimeout(() => {
+              setPhase('complete');
+              onComplete?.();
+            }, 800);
+          }, 1000);
+        }
+      }, 300);
+      
+      return () => clearInterval(wordInterval);
+    }, 1500);
+
+    return () => clearTimeout(splashTimer);
+  }, []);
+
+  // Allow tap to skip
+  const handleTap = () => {
+    if (phase === 'splash') {
+      setWordsVisible([0, 1, 2, 3, 4, 5]); // Show all words
+      setPhase('morphing');
+      setTimeout(() => {
+        setPhase('complete');
+        onComplete?.();
+      }, 600);
+    }
+  };
+
+  return (
+    <div 
+      className={`splash-screen ${phase}`}
+      onClick={handleTap}
+    >
+      {/* Background Image */}
+      <div className="splash-image-container">
+        <img 
+          src="/still-waters-bg.png" 
+          alt="Still Waters" 
+          className="splash-image"
+        />
+        <div className="splash-overlay"/>
+      </div>
+
+      {/* Animated Title */}
+      <div className="splash-content">
+        <h1 className="splash-title">
+          <span className={`splash-word still ${wordsVisible.includes(0) ? 'visible' : ''}`}>
+            Still
+          </span>
+          <span className={`splash-word waters ${wordsVisible.includes(1) ? 'visible' : ''}`}>
+            Waters
+          </span>
+        </h1>
+        
+        <p className="splash-tagline">
+          {taglineWords.map((word, i) => (
+            <span 
+              key={i}
+              className={`splash-tagline-word ${wordsVisible.includes(i + 2) ? 'visible' : ''}`}
+            >
+              {word}{' '}
+            </span>
+          ))}
+        </p>
+
+        {phase === 'splash' && (
+          <p className="splash-hint">Tap to continue</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// AUTH SCREEN - WITH MORPH TRANSITION
 // ============================================
 const AuthScreen = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -245,29 +357,26 @@ const AuthScreen = () => {
     }
   };
 
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
   return (
-    <div className="auth-screen">
-      <div className="auth-ambient"/>
-      <div className="auth-container">
+    <div className="auth-screen entered">
+      {/* Background Image */}
+      <div className="auth-backdrop">
+        <img 
+          src="/still-waters-bg.png" 
+          alt="" 
+          className="auth-backdrop-image"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+        <div className="auth-backdrop-overlay"/>
+      </div>
+      
+      <div className="auth-container fade-in-up">
         <div className="auth-logo">
-          <div className="logo-glow"/>
-          <div className="logo-icon">
-            <svg viewBox="0 0 100 100" fill="none">
-              <circle cx="50" cy="35" r="15" fill="url(#logoGrad)" opacity="0.9"/>
-              <ellipse cx="50" cy="70" rx="35" ry="12" fill="url(#waterGrad)" opacity="0.6"/>
-              <path d="M50 50 L50 85" stroke="url(#logoGrad)" strokeWidth="2" opacity="0.5"/>
-              <defs>
-                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#c4a962"/>
-                  <stop offset="100%" stopColor="#f5f0e1"/>
-                </linearGradient>
-                <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1a5a6a"/>
-                  <stop offset="100%" stopColor="#0a3d4d"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
           <h1 className="logo-text">
             <span className="logo-still">Still</span>
             <span className="logo-waters">Waters</span>
@@ -278,7 +387,7 @@ const AuthScreen = () => {
         <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'signup' && (
             <div className="form-group">
-              <label>Display Name</label>
+              <label>DISPLAY NAME</label>
               <input
                 type="text"
                 value={displayName}
@@ -290,7 +399,7 @@ const AuthScreen = () => {
           )}
           
           <div className="form-group">
-            <label>Email</label>
+            <label>EMAIL</label>
             <input
               type="email"
               value={email}
@@ -301,7 +410,7 @@ const AuthScreen = () => {
           </div>
           
           <div className="form-group">
-            <label>Password</label>
+            <label>PASSWORD</label>
             <input
               type="password"
               value={password}
@@ -436,22 +545,59 @@ const HomeScreen = ({ onNavigate }) => {
 };
 
 // ============================================
+// HELPER: Format date safely
+// ============================================
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
+};
+
+// ============================================
+// HELPER: Generate conversation title from first message
+// ============================================
+const generateTitle = (content) => {
+  if (!content) return 'New Conversation';
+  const maxLen = 40;
+  if (content.length <= maxLen) return content;
+  const truncated = content.substring(0, maxLen);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return (lastSpace > 20 ? truncated.substring(0, lastSpace) : truncated) + '...';
+};
+
+// ============================================
 // CHAT SCREEN
 // ============================================
 const ChatScreen = ({ onNavigate, params }) => {
   const { request } = useApi();
   const [conversations, setConversations] = useState([]);
+  const [deletedConversations, setDeletedConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [showTrash, setShowTrash] = useState(false);
   const messagesEndRef = useRef(null);
   const hasStartedNewChat = useRef(false);
 
   useEffect(() => {
     loadConversations();
+    loadDeletedConversations();
   }, []);
 
   useEffect(() => {
@@ -469,12 +615,22 @@ const ChatScreen = ({ onNavigate, params }) => {
     try {
       const data = await request('/conversations');
       const convos = data?.conversations || (Array.isArray(data) ? data : []);
-      setConversations(convos);
+      setConversations(convos.filter(c => !c.deleted_at));
     } catch (err) {
       console.error('Failed to load conversations:', err);
       setConversations([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDeletedConversations = async () => {
+    try {
+      const data = await request('/conversations?deleted=true');
+      const convos = data?.conversations || (Array.isArray(data) ? data : []);
+      setDeletedConversations(convos.filter(c => c.deleted_at));
+    } catch (err) {
+      console.log('Deleted conversations not available');
     }
   };
 
@@ -530,18 +686,35 @@ const ChatScreen = ({ onNavigate, params }) => {
     setInput('');
     setSending(true);
 
+    const isFirstMessage = messages.length === 0;
+
     try {
       const data = await request(`/conversations/${activeConvo.id}/messages`, {
         method: 'POST',
         body: JSON.stringify({ content: messageContent })
       });
-      // API returns { userMessage, assistantMessage, crisisLevel, flaggedForReview }
       const aiMessage = data.assistantMessage || data.message || data.response || data;
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: aiMessage.content || aiMessage, 
         created_at: aiMessage.created_at || new Date().toISOString() 
       }]);
+
+      if (isFirstMessage) {
+        const newTitle = generateTitle(messageContent);
+        try {
+          await request(`/conversations/${activeConvo.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ title: newTitle })
+          });
+          setActiveConvo(prev => ({ ...prev, title: newTitle }));
+          setConversations(prev => prev.map(c => 
+            c.id === activeConvo.id ? { ...c, title: newTitle } : c
+          ));
+        } catch (err) {
+          console.log('Could not update title:', err);
+        }
+      }
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => [...prev, { role: 'assistant', content: 'I apologize, but I encountered an error. Please try again.', created_at: new Date().toISOString() }]);
@@ -552,18 +725,104 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const deleteConversation = async (id) => {
     try {
-      await request(`/conversations/${id}`, { method: 'DELETE' });
+      await request(`/conversations/${id}`, { 
+        method: 'PATCH',
+        body: JSON.stringify({ deleted_at: new Date().toISOString() })
+      });
+      
+      const deleted = conversations.find(c => c.id === id);
+      if (deleted) {
+        setDeletedConversations(prev => [{ ...deleted, deleted_at: new Date().toISOString() }, ...prev]);
+      }
       setConversations(prev => prev.filter(c => c.id !== id));
+      
       if (activeConvo?.id === id) {
         setActiveConvo(null);
         setMessages([]);
       }
     } catch (err) {
-      console.error('Failed to delete conversation:', err);
+      try {
+        await request(`/conversations/${id}`, { method: 'DELETE' });
+        setConversations(prev => prev.filter(c => c.id !== id));
+        if (activeConvo?.id === id) {
+          setActiveConvo(null);
+          setMessages([]);
+        }
+      } catch (err2) {
+        console.error('Failed to delete conversation:', err2);
+      }
     }
   };
 
-  // Conversation List View
+  const restoreConversation = async (id) => {
+    try {
+      await request(`/conversations/${id}`, { 
+        method: 'PATCH',
+        body: JSON.stringify({ deleted_at: null })
+      });
+      
+      const restored = deletedConversations.find(c => c.id === id);
+      if (restored) {
+        setConversations(prev => [{ ...restored, deleted_at: null }, ...prev]);
+      }
+      setDeletedConversations(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error('Failed to restore conversation:', err);
+    }
+  };
+
+  const permanentlyDelete = async (id) => {
+    try {
+      await request(`/conversations/${id}`, { method: 'DELETE' });
+      setDeletedConversations(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error('Failed to permanently delete:', err);
+    }
+  };
+
+  if (showTrash) {
+    return (
+      <div className="chat-screen">
+        <div className="chat-header">
+          <button className="icon-button" onClick={() => setShowTrash(false)}>
+            <Icons.ArrowLeft/>
+          </button>
+          <h1>Recently Deleted</h1>
+          <div style={{ width: 40 }}/>
+        </div>
+
+        <div className="trash-notice">
+          <p>Conversations are permanently deleted after 30 days</p>
+        </div>
+
+        <div className="conversation-list">
+          {deletedConversations.length === 0 ? (
+            <div className="empty-state">
+              <p>No deleted conversations</p>
+            </div>
+          ) : (
+            deletedConversations.map(convo => (
+              <div key={convo.id} className="conversation-item deleted">
+                <div className="convo-info">
+                  <h3>{convo.title || 'Conversation'}</h3>
+                  <p>Deleted {formatDate(convo.deleted_at)}</p>
+                </div>
+                <div className="convo-actions">
+                  <button className="restore-button" onClick={() => restoreConversation(convo.id)} title="Restore">
+                    <Icons.Restore/>
+                  </button>
+                  <button className="delete-button permanent" onClick={() => permanentlyDelete(convo.id)} title="Delete Forever">
+                    <Icons.Trash/>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!activeConvo) {
     return (
       <div className="chat-screen">
@@ -589,7 +848,7 @@ const ChatScreen = ({ onNavigate, params }) => {
               <div key={convo.id} className="conversation-item" onClick={() => loadConversation(convo.id)}>
                 <div className="convo-info">
                   <h3>{convo.title || 'Conversation'}</h3>
-                  <p>{new Date(convo.updated_at || convo.created_at).toLocaleDateString()}</p>
+                  <p>{formatDate(convo.updated_at || convo.created_at)}</p>
                 </div>
                 <button className="delete-button" onClick={(e) => { e.stopPropagation(); deleteConversation(convo.id); }}>
                   <Icons.Trash/>
@@ -598,11 +857,16 @@ const ChatScreen = ({ onNavigate, params }) => {
             ))
           )}
         </div>
+
+        {deletedConversations.length > 0 && (
+          <button className="trash-link" onClick={() => setShowTrash(true)}>
+            <Icons.Archive/> Recently Deleted ({deletedConversations.length})
+          </button>
+        )}
       </div>
     );
   }
 
-  // Active Chat View
   return (
     <div className="chat-screen active">
       <div className="chat-header">
