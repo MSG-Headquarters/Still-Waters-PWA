@@ -574,13 +574,19 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const loadConversations = async () => {
     try {
-      const data = await request('/conversations');
-      const convos = data?.conversations || (Array.isArray(data) ? data : []);
-      setConversations(convos.filter(c => !c.deleted_at));
-      setDeletedConversations(convos.filter(c => c.deleted_at));
+      // Get active conversations
+      const activeData = await request('/conversations');
+      const activeConvos = activeData?.conversations || (Array.isArray(activeData) ? activeData : []);
+      setConversations(activeConvos.filter(c => !c.deleted_at));
+      
+      // Get deleted conversations separately
+      const deletedData = await request('/conversations?includeDeleted=true');
+      const allConvos = deletedData?.conversations || (Array.isArray(deletedData) ? deletedData : []);
+      setDeletedConversations(allConvos.filter(c => c.deleted_at));
     } catch (err) {
       console.error('Failed to load conversations:', err);
       setConversations([]);
+      setDeletedConversations([]);
     } finally {
       setLoading(false);
     }
