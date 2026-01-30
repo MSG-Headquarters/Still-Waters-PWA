@@ -226,6 +226,23 @@ const Icons = {
       <line x1="12" y1="2" x2="12" y2="22"/>
       <line x1="6" y1="6" x2="18" y2="6"/>
     </svg>
+  ),
+  Users: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  Share: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3"/>
+      <circle cx="6" cy="12" r="3"/>
+      <circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
   )
 };
 
@@ -1149,29 +1166,84 @@ const ScripturesScreen = () => {
 };
 
 // ============================================
-// PRAYERS SCREEN
+// PRAYERS SCREEN - COMMUNITY WALL
 // ============================================
 const PrayersScreen = () => {
+  const { user } = useAuth();
   const { request } = useApi();
+  
+  // Main state
+  const [activeTab, setActiveTab] = useState('community'); // 'journal', 'community', 'public'
   const [prayers, setPrayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Community state
+  const [swCode, setSwCode] = useState('');
+  const [communitySize, setCommunitySize] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [connections, setConnections] = useState([]);
+  const [pendingIncoming, setPendingIncoming] = useState([]);
+  
+  // UI state
   const [showForm, setShowForm] = useState(false);
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
+  
+  // Form state
   const [newPrayer, setNewPrayer] = useState('');
   const [visibility, setVisibility] = useState('community');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [category, setCategory] = useState('');
+  
+  // Add friend state
+  const [friendCode, setFriendCode] = useState('');
+  const [friendSearch, setFriendSearch] = useState(null);
+  const [friendError, setFriendError] = useState('');
+  const [friendLoading, setFriendLoading] = useState(false);
 
   useEffect(() => {
+    loadCommunityInfo();
     loadPrayers();
   }, []);
 
-  const loadPrayers = async () => {
+  useEffect(() => {
+    loadPrayers();
+  }, [activeTab]);
+
+  const loadCommunityInfo = async () => {
     try {
-      const data = await request('/prayers/requests');
-      setPrayers(data.prayers || data.requests || data || []);
+      const data = await request('/community/me');
+      setSwCode(data.sw_code || '');
+      setCommunitySize(data.community_size || 0);
+      setPendingRequests(data.pending_requests || 0);
+    } catch (err) {
+      console.error('Failed to load community info:', err);
+    }
+  };
+
+  const loadPrayers = async () => {
+    setLoading(true);
+    try {
+      const data = await request(`/prayers?view=${activeTab}`);
+      setPrayers(data.prayers || []);
     } catch (err) {
       console.error('Failed to load prayers:', err);
+      setPrayers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadConnections = async () => {
+    try {
+      const [connectionsData, pendingData] = await Promise.all([
+        request('/community/connections?status=accepted'),
+        request('/community/pending')
+      ]);
+      setConnections(connectionsData.connections || []);
+      setPendingIncoming(pendingData.incoming || []);
+    } catch (err) {
+      console.error('Failed to load connections:', err);
     }
   };
 
@@ -1180,12 +1252,18 @@ const PrayersScreen = () => {
     if (!newPrayer.trim()) return;
 
     try {
-      await request('/prayers/requests', {
+      await request('/prayers', {
         method: 'POST',
-        body: JSON.stringify({ content: newPrayer, visibility, isAnonymous })
+        body: JSON.stringify({ 
+          content: newPrayer, 
+          visibility, 
+          is_anonymous: isAnonymous,
+          category: category || null
+        })
       });
       setNewPrayer('');
       setShowForm(false);
+      setCategory('');
       loadPrayers();
     } catch (err) {
       console.error('Failed to submit prayer:', err);
@@ -1194,66 +1272,370 @@ const PrayersScreen = () => {
 
   const prayFor = async (id) => {
     try {
-      await request(`/prayers/requests/${id}/pray`, { method: 'POST' });
+      await request(`/prayers/${id}/pray`, { method: 'POST' });
       setPrayers(prev => prev.map(p => 
-        p.id === id ? { ...p, prayer_count: (p.prayer_count || 0) + 1, hasPrayed: true } : p
+        p.id === id ? { ...p, pray_count: (p.pray_count || 0) + 1, has_prayed: true } : p
       ));
     } catch (err) {
       console.error('Failed to mark prayer:', err);
     }
   };
 
-  if (loading) {
+  const markAnswered = async (id) => {
+    try {
+      await request(`/prayers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_answered: true })
+      });
+      setPrayers(prev => prev.map(p => 
+        p.id === id ? { ...p, is_answered: true } : p
+      ));
+    } catch (err) {
+      console.error('Failed to mark answered:', err);
+    }
+  };
+
+  const deletePrayer = async (id) => {
+    try {
+      await request(`/prayers/${id}`, { method: 'DELETE' });
+      setPrayers(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Failed to delete prayer:', err);
+    }
+  };
+
+  const searchFriend = async () => {
+    if (!friendCode.trim()) return;
+    setFriendLoading(true);
+    setFriendError('');
+    setFriendSearch(null);
+    
+    try {
+      const data = await request(`/community/search/${friendCode.trim().toUpperCase()}`);
+      setFriendSearch(data);
+    } catch (err) {
+      setFriendError('No user found with that code');
+    } finally {
+      setFriendLoading(false);
+    }
+  };
+
+  const sendFriendRequest = async () => {
+    try {
+      await request('/community/connect', {
+        method: 'POST',
+        body: JSON.stringify({ sw_code: friendCode.trim() })
+      });
+      setFriendCode('');
+      setFriendSearch(null);
+      setShowAddFriend(false);
+      loadCommunityInfo();
+      alert('Friend request sent! 🙏');
+    } catch (err) {
+      setFriendError(err.message || 'Failed to send request');
+    }
+  };
+
+  const acceptRequest = async (connectionId) => {
+    try {
+      await request(`/community/connections/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'accept' })
+      });
+      loadConnections();
+      loadCommunityInfo();
+    } catch (err) {
+      console.error('Failed to accept:', err);
+    }
+  };
+
+  const declineRequest = async (connectionId) => {
+    try {
+      await request(`/community/connections/${connectionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'decline' })
+      });
+      loadConnections();
+      loadCommunityInfo();
+    } catch (err) {
+      console.error('Failed to decline:', err);
+    }
+  };
+
+  const copySwCode = () => {
+    navigator.clipboard.writeText(swCode);
+    alert('Code copied! Share it with friends to connect.');
+  };
+
+  const shareSwCode = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Join my Still Waters community',
+        text: `Add me on Still Waters! My code is ${swCode}`,
+        url: 'https://app.stillwaters.umbrassi.com'
+      });
+    } else {
+      copySwCode();
+    }
+  };
+
+  // Community Management Modal
+  if (showCommunity) {
+    return (
+      <div className="prayers-screen">
+        <div className="prayers-header">
+          <button className="icon-button" onClick={() => setShowCommunity(false)}><Icons.ArrowLeft/></button>
+          <h1>My Community</h1>
+          <button className="icon-button" onClick={() => { loadConnections(); setShowAddFriend(true); }}><Icons.Plus/></button>
+        </div>
+
+        <div className="community-code-card">
+          <p className="code-label">Your Still Waters Code</p>
+          <div className="code-display">
+            <span className="sw-code">{swCode}</span>
+            <button className="share-code-btn" onClick={shareSwCode}><Icons.Share/></button>
+          </div>
+          <p className="code-hint">Share this code with friends to connect</p>
+        </div>
+
+        {pendingIncoming.length > 0 && (
+          <div className="pending-section">
+            <h3>Friend Requests ({pendingIncoming.length})</h3>
+            {pendingIncoming.map(req => (
+              <div key={req.id} className="pending-request">
+                <div className="request-info">
+                  <span className="request-name">{req.from.display_name}</span>
+                  <span className="request-code">{req.from.sw_code}</span>
+                </div>
+                <div className="request-actions">
+                  <button className="accept-btn" onClick={() => acceptRequest(req.id)}>Accept</button>
+                  <button className="decline-btn" onClick={() => declineRequest(req.id)}>Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="connections-section">
+          <h3>Connected ({connections.length})</h3>
+          {connections.length === 0 ? (
+            <p className="empty-hint">Add friends using their SW code to build your prayer community</p>
+          ) : (
+            connections.map(conn => (
+              <div key={conn.id} className="connection-item">
+                <span className="connection-name">{conn.friend.display_name}</span>
+                <span className="connection-code">{conn.friend.sw_code}</span>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Add Friend Modal */}
+        {showAddFriend && (
+          <div className="modal-overlay" onClick={() => setShowAddFriend(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <h2>Add Friend</h2>
+              <p>Enter their Still Waters code</p>
+              <div className="friend-search">
+                <input
+                  type="text"
+                  value={friendCode}
+                  onChange={(e) => setFriendCode(e.target.value.toUpperCase())}
+                  placeholder="SW-000000"
+                  maxLength={10}
+                />
+                <button onClick={searchFriend} disabled={friendLoading}>
+                  {friendLoading ? '...' : 'Find'}
+                </button>
+              </div>
+              {friendError && <p className="friend-error">{friendError}</p>}
+              {friendSearch && (
+                <div className="friend-result">
+                  {friendSearch.user.is_self ? (
+                    <p>That's your own code! 😄</p>
+                  ) : friendSearch.connection_status === 'accepted' ? (
+                    <p>You're already connected with {friendSearch.user.display_name}!</p>
+                  ) : friendSearch.connection_status === 'pending' ? (
+                    <p>Request already pending</p>
+                  ) : (
+                    <>
+                      <p className="found-name">{friendSearch.user.display_name}</p>
+                      <button className="send-request-btn" onClick={sendFriendRequest}>
+                        Send Friend Request
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              <button className="modal-close" onClick={() => setShowAddFriend(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (loading && prayers.length === 0) {
     return <LoadingScreen message="Loading prayers..."/>;
   }
+
+  const categories = [
+    { id: 'gratitude', name: 'Gratitude', emoji: '🙏' },
+    { id: 'healing', name: 'Healing', emoji: '💚' },
+    { id: 'guidance', name: 'Guidance', emoji: '🧭' },
+    { id: 'family', name: 'Family', emoji: '👨‍👩‍👧‍👦' },
+    { id: 'work', name: 'Work', emoji: '💼' },
+    { id: 'relationships', name: 'Relationships', emoji: '❤️' },
+    { id: 'faith', name: 'Faith', emoji: '✨' },
+    { id: 'peace', name: 'Peace', emoji: '🕊️' }
+  ];
 
   return (
     <div className="prayers-screen">
       <div className="prayers-header">
-        <h1>Prayer Wall</h1>
-        <button className="icon-button" onClick={() => setShowForm(!showForm)}><Icons.Plus/></button>
+        <h1>Prayers</h1>
+        <div className="header-actions">
+          <button className="community-badge" onClick={() => { loadConnections(); setShowCommunity(true); }}>
+            <Icons.Users/> {communitySize}
+            {pendingRequests > 0 && <span className="badge-dot"/>}
+          </button>
+          <button className="icon-button" onClick={() => setShowForm(!showForm)}><Icons.Plus/></button>
+        </div>
       </div>
 
+      {/* Tab Switcher */}
+      <div className="prayer-tabs">
+        <button 
+          className={`prayer-tab ${activeTab === 'journal' ? 'active' : ''}`}
+          onClick={() => setActiveTab('journal')}
+        >
+          📔 Journal
+        </button>
+        <button 
+          className={`prayer-tab ${activeTab === 'community' ? 'active' : ''}`}
+          onClick={() => setActiveTab('community')}
+        >
+          👥 Community
+        </button>
+        <button 
+          className={`prayer-tab ${activeTab === 'public' ? 'active' : ''}`}
+          onClick={() => setActiveTab('public')}
+        >
+          🌍 Public
+        </button>
+      </div>
+
+      {/* Create Prayer Form */}
       {showForm && (
         <form className="prayer-form" onSubmit={submitPrayer}>
           <textarea
             value={newPrayer}
             onChange={(e) => setNewPrayer(e.target.value)}
-            placeholder="Share your prayer request..."
+            placeholder={activeTab === 'journal' ? "Write in your prayer journal..." : "Share your prayer request..."}
             rows={4}
           />
+          
+          <div className="category-chips">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`category-chip ${category === cat.id ? 'selected' : ''}`}
+                onClick={() => setCategory(category === cat.id ? '' : cat.id)}
+              >
+                {cat.emoji} {cat.name}
+              </button>
+            ))}
+          </div>
+
           <div className="form-options">
             <select value={visibility} onChange={(e) => setVisibility(e.target.value)}>
-              <option value="community">Share with Community</option>
-              <option value="private">Keep Private</option>
+              <option value="private">🔒 Private Journal</option>
+              <option value="community">👥 My Community</option>
+              <option value="public">🌍 Public</option>
             </select>
-            <label className="checkbox-label">
-              <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)}/>
-              Post Anonymously
-            </label>
+            {visibility !== 'private' && (
+              <label className="checkbox-label">
+                <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)}/>
+                Post Anonymously
+              </label>
+            )}
           </div>
-          <button type="submit" className="submit-button">Submit Prayer</button>
+          <button type="submit" className="submit-button">
+            {visibility === 'private' ? 'Save to Journal' : 'Share Prayer'}
+          </button>
         </form>
       )}
 
+      {/* Prayers List */}
       <div className="prayers-list">
         {prayers.length === 0 ? (
-          <div className="empty-state"><p>No prayer requests yet. Be the first to share.</p></div>
+          <div className="empty-state">
+            {activeTab === 'journal' ? (
+              <>
+                <p>Your prayer journal is empty</p>
+                <p className="empty-hint">Start writing your private prayers and reflections</p>
+              </>
+            ) : activeTab === 'community' ? (
+              <>
+                <p>No community prayers yet</p>
+                <p className="empty-hint">
+                  {communitySize === 0 
+                    ? "Add friends with their SW code to see their prayers"
+                    : "Be the first to share a prayer with your community"
+                  }
+                </p>
+                {communitySize === 0 && (
+                  <button className="add-friends-btn" onClick={() => { loadConnections(); setShowCommunity(true); }}>
+                    Add Friends
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <p>No public prayers yet</p>
+                <p className="empty-hint">Be the first to share publicly</p>
+              </>
+            )}
+          </div>
         ) : (
           prayers.map(prayer => (
-            <div key={prayer.id} className="prayer-card">
+            <div key={prayer.id} className={`prayer-card ${prayer.is_answered ? 'answered' : ''}`}>
+              {prayer.category && (
+                <span className="prayer-category">
+                  {categories.find(c => c.id === prayer.category)?.emoji} {categories.find(c => c.id === prayer.category)?.name}
+                </span>
+              )}
               <p className="prayer-content">{prayer.content}</p>
+              {prayer.is_answered && (
+                <div className="answered-badge">✓ Prayer Answered</div>
+              )}
               <div className="prayer-meta">
                 <span className="prayer-author">
-                  {prayer.is_anonymous || prayer.isAnonymous ? 'Anonymous' : (prayer.user?.display_name || 'A fellow believer')}
+                  {prayer.is_own ? 'You' : (prayer.author?.display_name || 'Anonymous')}
+                  {!prayer.is_own && prayer.author?.sw_code && ` • ${prayer.author.sw_code}`}
                 </span>
-                <button 
-                  className={`pray-button ${prayer.hasPrayed ? 'prayed' : ''}`}
-                  onClick={() => prayFor(prayer.id)}
-                  disabled={prayer.hasPrayed}
-                >
-                  🙏 {prayer.prayer_count || 0}
-                </button>
+                <div className="prayer-actions">
+                  {prayer.is_own && !prayer.is_answered && (
+                    <>
+                      <button className="answered-btn" onClick={() => markAnswered(prayer.id)}>
+                        ✓ Answered
+                      </button>
+                      <button className="delete-prayer-btn" onClick={() => deletePrayer(prayer.id)}>
+                        <Icons.Trash/>
+                      </button>
+                    </>
+                  )}
+                  {!prayer.is_own && (
+                    <button 
+                      className={`pray-button ${prayer.has_prayed ? 'prayed' : ''}`}
+                      onClick={() => prayFor(prayer.id)}
+                      disabled={prayer.has_prayed}
+                    >
+                      🙏 {prayer.pray_count || 0}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))
@@ -1347,9 +1729,9 @@ const Navigation = ({ active, onNavigate }) => {
   const items = [
     { id: 'home', icon: Icons.Home, label: 'Home' },
     { id: 'chat', icon: Icons.Chat, label: 'Chat' },
-    { id: 'devotional', icon: Icons.Sun, label: 'Daily' },
+    { id: 'prayers', icon: Icons.Heart, label: 'Prayers' },
     { id: 'scriptures', icon: Icons.Book, label: 'Bible' },
-    { id: 'profile', icon: Icons.User, label: 'Profile' }
+    { id: 'profile', icon: Icons.User, label: 'Me' }
   ];
 
   return (

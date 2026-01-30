@@ -828,18 +828,73 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 .verse-text { font-family: var(--font-display); font-size: 1.05rem; font-style: italic; line-height: 1.7; margin-bottom: var(--space-md); }
 .verse-reference { font-size: 0.85rem; color: var(--gold); font-weight: 500; }
 
-/* Prayers */
+/* Prayers - Community Wall */
 .prayers-screen { padding: var(--space-xl); padding-top: calc(var(--safe-top) + var(--space-xl)); max-width: 600px; margin: 0 auto; }
 
-.prayers-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-xl); }
+.prayers-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); }
 .prayers-header h1 { font-family: var(--font-display); font-size: 1.8rem; }
 
+.header-actions { display: flex; align-items: center; gap: var(--space-sm); }
+
+.community-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(196,169,98,0.1);
+  border: 1px solid rgba(196,169,98,0.3);
+  border-radius: var(--radius-full);
+  color: var(--gold);
+  font-size: 0.85rem;
+  position: relative;
+}
+
+.community-badge svg { width: 16px; height: 16px; }
+
+.badge-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: #e8a54b;
+  border-radius: 50%;
+  border: 2px solid var(--deep-navy);
+}
+
+/* Prayer Tabs */
+.prayer-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  background: rgba(245,240,225,0.03);
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+}
+
+.prayer-tab {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.prayer-tab.active {
+  background: rgba(196,169,98,0.15);
+  color: var(--gold);
+}
+
+/* Prayer Form */
 .prayer-form {
   padding: var(--space-lg);
   background: var(--bg-card);
   border: 1px solid rgba(196,169,98,0.15);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
 }
 
 .prayer-form textarea {
@@ -855,6 +910,29 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 
 .prayer-form textarea:focus { outline: none; border-color: var(--gold); }
 .prayer-form textarea::placeholder { color: var(--text-muted); }
+
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.category-chip {
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(245,240,225,0.05);
+  border: 1px solid rgba(245,240,225,0.1);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.category-chip.selected {
+  background: rgba(196,169,98,0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
 
 .form-options { display: flex; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-md); }
 
@@ -878,6 +956,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
   border-radius: var(--radius-md);
 }
 
+/* Prayer Cards */
 .prayers-list { display: flex; flex-direction: column; gap: var(--space-md); }
 
 .prayer-card {
@@ -885,11 +964,38 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
   background: var(--bg-card);
   border: 1px solid rgba(245,240,225,0.05);
   border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.prayer-card.answered {
+  border-color: rgba(74,157,106,0.3);
+  background: rgba(74,157,106,0.05);
+}
+
+.prayer-category {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
 }
 
 .prayer-content { font-size: 1rem; line-height: 1.6; margin-bottom: var(--space-md); }
-.prayer-meta { display: flex; align-items: center; justify-content: space-between; }
+
+.answered-badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(74,157,106,0.2);
+  color: #6fcf97;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.prayer-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm); }
 .prayer-author { font-size: 0.85rem; color: var(--text-muted); }
+
+.prayer-actions { display: flex; align-items: center; gap: var(--space-sm); }
 
 .pray-button {
   padding: var(--space-sm) var(--space-md);
@@ -898,9 +1004,197 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
   border-radius: var(--radius-full);
   color: var(--gold);
   font-size: 0.85rem;
+  transition: all 0.2s;
 }
 
-.pray-button.prayed { background: rgba(196,169,98,0.2); }
+.pray-button.prayed { background: rgba(196,169,98,0.25); }
+
+.answered-btn {
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(74,157,106,0.1);
+  border: 1px solid rgba(74,157,106,0.3);
+  border-radius: var(--radius-sm);
+  color: #6fcf97;
+  font-size: 0.8rem;
+}
+
+.delete-prayer-btn {
+  padding: var(--space-xs);
+  color: var(--text-muted);
+}
+
+.delete-prayer-btn:hover { color: #ff6b6b; }
+.delete-prayer-btn svg { width: 16px; height: 16px; }
+
+.add-friends-btn {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  background: rgba(196,169,98,0.15);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.empty-hint { font-size: 0.85rem; color: var(--text-muted); margin-top: var(--space-xs); }
+
+/* Community Management */
+.community-code-card {
+  padding: var(--space-lg);
+  background: linear-gradient(135deg, rgba(196,169,98,0.15) 0%, rgba(26,90,106,0.1) 100%);
+  border: 1px solid rgba(196,169,98,0.3);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.code-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--space-sm); }
+
+.code-display { display: flex; align-items: center; justify-content: center; gap: var(--space-md); }
+
+.sw-code {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.share-code-btn {
+  padding: var(--space-sm);
+  background: rgba(196,169,98,0.2);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+}
+
+.share-code-btn svg { width: 20px; height: 20px; }
+
+.code-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: var(--space-sm); }
+
+.pending-section, .connections-section { margin-bottom: var(--space-xl); }
+.pending-section h3, .connections-section h3 { font-family: var(--font-display); font-size: 1.1rem; margin-bottom: var(--space-md); color: var(--text-secondary); }
+
+.pending-request {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid rgba(232,165,75,0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+.request-info { display: flex; flex-direction: column; }
+.request-name { font-weight: 500; }
+.request-code { font-size: 0.8rem; color: var(--text-muted); }
+
+.request-actions { display: flex; gap: var(--space-sm); }
+
+.accept-btn {
+  padding: var(--space-xs) var(--space-md);
+  background: rgba(74,157,106,0.2);
+  border: 1px solid rgba(74,157,106,0.4);
+  border-radius: var(--radius-sm);
+  color: #6fcf97;
+  font-size: 0.85rem;
+}
+
+.decline-btn {
+  padding: var(--space-xs) var(--space-md);
+  background: rgba(255,100,100,0.1);
+  border: 1px solid rgba(255,100,100,0.3);
+  border-radius: var(--radius-sm);
+  color: #ff9999;
+  font-size: 0.85rem;
+}
+
+.connection-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid rgba(245,240,225,0.05);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+.connection-name { font-weight: 500; }
+.connection-code { font-size: 0.8rem; color: var(--gold); }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,26,32,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  z-index: 200;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 360px;
+  padding: var(--space-xl);
+  background: var(--teal-dark);
+  border: 1px solid rgba(196,169,98,0.2);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.modal-content h2 { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: var(--space-sm); }
+.modal-content > p { color: var(--text-secondary); margin-bottom: var(--space-lg); }
+
+.friend-search {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.friend-search input {
+  flex: 1;
+  padding: var(--space-md);
+  background: rgba(245,240,225,0.08);
+  border: 1px solid rgba(196,169,98,0.3);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.friend-search input:focus { outline: none; border-color: var(--gold); }
+
+.friend-search button {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--gold);
+  color: var(--deep-navy);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+}
+
+.friend-error { color: #ff9999; font-size: 0.9rem; margin-bottom: var(--space-md); }
+
+.friend-result { padding: var(--space-md); background: rgba(245,240,225,0.05); border-radius: var(--radius-md); margin-bottom: var(--space-md); }
+
+.found-name { font-size: 1.1rem; font-weight: 500; margin-bottom: var(--space-md); }
+
+.send-request-btn {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--gold);
+  color: var(--deep-navy);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+}
+
+.modal-close {
+  padding: var(--space-sm) var(--space-lg);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
 
 /* Profile */
 .profile-screen { padding: var(--space-xl); padding-top: calc(var(--safe-top) + var(--space-xl)); max-width: 500px; margin: 0 auto; }
