@@ -74,6 +74,19 @@ const AuthProvider = ({ children }) => {
     return { success: false, error: data.message || 'Signup failed' };
   };
 
+  const forgotPassword = async (email) => {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      return { success: true, message: data.message || 'Password reset email sent' };
+    }
+    return { success: false, error: data.message || 'Failed to send reset email' };
+  };
+
   const logout = () => {
     localStorage.removeItem('sw_token');
     setToken(null);
@@ -81,7 +94,7 @@ const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, fetchUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, logout, fetchUser, forgotPassword }}>
       {children}
     </AuthContext.Provider>
   );
@@ -92,18 +105,18 @@ const AuthProvider = ({ children }) => {
 // ============================================
 const useApi = () => {
   const { token } = useAuth();
-  
+
   const request = async (endpoint, options = {}) => {
     const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers
     };
-    
+
     try {
       const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
       const data = await res.json();
-      
+
       if (!res.ok) throw new Error(data.message || 'Request failed');
       return data;
     } catch (err) {
@@ -253,9 +266,9 @@ const LoadingScreen = ({ message = 'Loading...' }) => {
   return (
     <div className="loading-screen">
       <div className="loading-backdrop">
-        <img 
-          src="/still-waters-bg.png" 
-          alt="" 
+        <img
+          src="/still-waters-bg.png"
+          alt=""
           className="loading-backdrop-image"
         />
         <div className="loading-backdrop-overlay"/>
@@ -280,7 +293,7 @@ const LoadingScreen = ({ message = 'Loading...' }) => {
 const SplashScreen = ({ onComplete }) => {
   const [phase, setPhase] = useState('splash');
   const [wordsVisible, setWordsVisible] = useState([]);
-  
+
   const titleWords = ['Still', 'Waters'];
   const taglineWords = ['Your', 'AI', 'Faith', 'Companion'];
 
@@ -288,7 +301,7 @@ const SplashScreen = ({ onComplete }) => {
     const splashTimer = setTimeout(() => {
       let wordIndex = 0;
       const allWords = [...titleWords, ...taglineWords];
-      
+
       const wordInterval = setInterval(() => {
         if (wordIndex < allWords.length) {
           setWordsVisible(prev => [...prev, wordIndex]);
@@ -304,7 +317,7 @@ const SplashScreen = ({ onComplete }) => {
           }, 1000);
         }
       }, 300);
-      
+
       return () => clearInterval(wordInterval);
     }, 1500);
 
@@ -347,30 +360,42 @@ const SplashScreen = ({ onComplete }) => {
 };
 
 // ============================================
-// AUTH SCREEN
+// AUTH SCREEN - WITH FORGOT PASSWORD
 // ============================================
 const AuthScreen = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState('login'); // 'login', 'signup', 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, signup } = useAuth();
+  const { login, signup, forgotPassword } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      const result = mode === 'login' 
-        ? await login(email, password)
-        : await signup(email, password, displayName);
-      
-      if (!result.success) {
-        setError(result.error);
+      if (mode === 'forgot') {
+        const result = await forgotPassword(email);
+        if (result.success) {
+          setSuccess('Password reset email sent! Check your inbox.');
+          setTimeout(() => setMode('login'), 3000);
+        } else {
+          setError(result.error);
+        }
+      } else {
+        const result = mode === 'login'
+          ? await login(email, password)
+          : await signup(email, password, displayName);
+
+        if (!result.success) {
+          setError(result.error);
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -389,7 +414,7 @@ const AuthScreen = () => {
         <img src="/still-waters-bg.png" alt="" className="auth-backdrop-image"/>
         <div className="auth-backdrop-overlay"/>
       </div>
-      
+
       <div className="auth-container fade-in-up">
         <div className="auth-logo">
           <h1 className="logo-text">
@@ -412,7 +437,7 @@ const AuthScreen = () => {
               />
             </div>
           )}
-          
+
           <div className="form-group">
             <label>EMAIL</label>
             <input
@@ -423,31 +448,45 @@ const AuthScreen = () => {
               required
             />
           </div>
-          
-          <div className="form-group">
-            <label>PASSWORD</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
-          </div>
+
+          {mode !== 'forgot' && (
+            <div className="form-group">
+              <label>PASSWORD</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
+            </div>
+          )}
 
           {error && <div className="auth-error">{error}</div>}
+          {success && <div className="auth-success">{success}</div>}
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? <div className="button-spinner"/> : (mode === 'login' ? 'Enter' : 'Begin Journey')}
+            {loading ? <div className="button-spinner"/> : (
+              mode === 'login' ? 'Enter' : 
+              mode === 'signup' ? 'Begin Journey' : 
+              'Send Reset Link'
+            )}
           </button>
         </form>
 
         <div className="auth-switch">
-          {mode === 'login' ? (
-            <p>New to Still Waters? <button onClick={() => setMode('signup')}>Create Account</button></p>
-          ) : (
-            <p>Already have an account? <button onClick={() => setMode('login')}>Sign In</button></p>
+          {mode === 'login' && (
+            <>
+              <p>New to Still Waters? <button onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}>Create Account</button></p>
+              <p className="forgot-link"><button onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}>Forgot Password?</button></p>
+            </>
+          )}
+          {mode === 'signup' && (
+            <p>Already have an account? <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }}>Sign In</button></p>
+          )}
+          {mode === 'forgot' && (
+            <p>Remember your password? <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }}>Sign In</button></p>
           )}
         </div>
       </div>
@@ -508,7 +547,7 @@ const HomeScreen = ({ onNavigate, devotional, devotionalLoading }) => {
                 <small>Talk with your faith companion</small>
               </span>
             </button>
-            
+
             <button className="action-button" onClick={() => onNavigate('scriptures')}>
               <span className="action-icon"><Icons.Book/></span>
               <span className="action-text">
@@ -565,7 +604,7 @@ const generateTitle = (content) => {
 };
 
 // ============================================
-// CHAT SCREEN
+// CHAT SCREEN - WITH MOBILE KEYBOARD FIX
 // ============================================
 const ChatScreen = ({ onNavigate, params }) => {
   const { request } = useApi();
@@ -579,8 +618,49 @@ const ChatScreen = ({ onNavigate, params }) => {
   const [showTrash, setShowTrash] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const hasStartedNewChat = useRef(false);
+
+  // Mobile keyboard detection and handling
+  useEffect(() => {
+    const handleResize = () => {
+      // Detect if keyboard is likely open (viewport shrunk significantly)
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const windowHeight = window.screen.height;
+      const keyboardOpen = windowHeight - viewportHeight > 150;
+      setKeyboardVisible(keyboardOpen);
+    };
+
+    // Use visualViewport API if available (better for mobile)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      window.visualViewport.addEventListener('scroll', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
+  // Scroll to bottom when keyboard opens or messages change
+  useEffect(() => {
+    if (keyboardVisible && messagesContainerRef.current) {
+      // Small delay to let keyboard fully open
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [keyboardVisible]);
 
   useEffect(() => {
     loadConversations();
@@ -599,12 +679,10 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const loadConversations = async () => {
     try {
-      // Get active conversations
       const activeData = await request('/conversations');
       const activeConvos = activeData?.conversations || (Array.isArray(activeData) ? activeData : []);
       setConversations(activeConvos.filter(c => !c.deleted_at));
-      
-      // Get deleted conversations separately
+
       const deletedData = await request('/conversations?includeDeleted=true');
       const allConvos = deletedData?.conversations || (Array.isArray(deletedData) ? deletedData : []);
       setDeletedConversations(allConvos.filter(c => c.deleted_at));
@@ -663,6 +741,9 @@ const ChatScreen = ({ onNavigate, params }) => {
     setInput('');
     setSending(true);
 
+    // Keep focus on input for mobile
+    inputRef.current?.focus();
+
     const isFirstMessage = messages.length === 0;
 
     try {
@@ -671,10 +752,10 @@ const ChatScreen = ({ onNavigate, params }) => {
         body: JSON.stringify({ content: messageContent })
       });
       const aiMessage = data.assistantMessage || data.message || data.response || data;
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: aiMessage.content || aiMessage, 
-        created_at: aiMessage.created_at || new Date().toISOString() 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: aiMessage.content || aiMessage,
+        created_at: aiMessage.created_at || new Date().toISOString()
       }]);
 
       if (isFirstMessage) {
@@ -685,7 +766,7 @@ const ChatScreen = ({ onNavigate, params }) => {
             body: JSON.stringify({ title: newTitle })
           });
           setActiveConvo(prev => ({ ...prev, title: newTitle }));
-          setConversations(prev => prev.map(c => 
+          setConversations(prev => prev.map(c =>
             c.id === activeConvo.id ? { ...c, title: newTitle } : c
           ));
         } catch (err) {
@@ -693,10 +774,10 @@ const ChatScreen = ({ onNavigate, params }) => {
         }
       }
     } catch (err) {
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'I apologize, but I encountered an error. Please try again.', 
-        created_at: new Date().toISOString() 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'I apologize, but I encountered an error. Please try again.',
+        created_at: new Date().toISOString()
       }]);
     } finally {
       setSending(false);
@@ -705,7 +786,7 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const deleteConversation = async (id) => {
     try {
-      await request(`/conversations/${id}`, { 
+      await request(`/conversations/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ deleted_at: new Date().toISOString() })
       });
@@ -734,7 +815,7 @@ const ChatScreen = ({ onNavigate, params }) => {
 
   const restoreConversation = async (id) => {
     try {
-      await request(`/conversations/${id}`, { 
+      await request(`/conversations/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ deleted_at: null })
       });
@@ -774,7 +855,7 @@ const ChatScreen = ({ onNavigate, params }) => {
         method: 'PATCH',
         body: JSON.stringify({ title: editTitle.trim() })
       });
-      setConversations(prev => prev.map(c => 
+      setConversations(prev => prev.map(c =>
         c.id === id ? { ...c, title: editTitle.trim() } : c
       ));
     } catch (err) {
@@ -790,6 +871,14 @@ const ChatScreen = ({ onNavigate, params }) => {
     } else if (e.key === 'Escape') {
       setEditingId(null);
     }
+  };
+
+  // Handle input focus for mobile keyboard
+  const handleInputFocus = () => {
+    // Scroll messages to bottom after a short delay
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
   };
 
   if (showTrash) {
@@ -888,7 +977,7 @@ const ChatScreen = ({ onNavigate, params }) => {
   }
 
   return (
-    <div className="chat-screen active">
+    <div className={`chat-screen active ${keyboardVisible ? 'keyboard-visible' : ''}`}>
       <div className="chat-header">
         <button className="icon-button" onClick={() => { setActiveConvo(null); setMessages([]); hasStartedNewChat.current = false; }}>
           <Icons.ArrowLeft/>
@@ -897,7 +986,7 @@ const ChatScreen = ({ onNavigate, params }) => {
         <div style={{ width: 40 }}/>
       </div>
 
-      <div className="messages-container">
+      <div className="messages-container" ref={messagesContainerRef}>
         {messages.length === 0 && !loading && (
           <div className="welcome-message">
             <div className="welcome-icon"><Icons.Cross/></div>
@@ -905,13 +994,13 @@ const ChatScreen = ({ onNavigate, params }) => {
             <p>Share what's on your heart. I'm here to listen, offer scripture, and walk alongside you in faith.</p>
           </div>
         )}
-        
+
         {messages.map((msg, i) => (
           <div key={i} className={`message ${msg.role}`}>
             <div className="message-content">{msg.content}</div>
           </div>
         ))}
-        
+
         {sending && (
           <div className="message assistant">
             <div className="message-content typing"><span/><span/><span/></div>
@@ -922,9 +1011,11 @@ const ChatScreen = ({ onNavigate, params }) => {
 
       <form className="chat-input" onSubmit={sendMessage}>
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onFocus={handleInputFocus}
           placeholder="Share what's on your heart..."
           disabled={sending}
         />
@@ -944,7 +1035,7 @@ const DevotionalScreen = ({ devotional, loading }) => {
   const markComplete = async () => {
     if (!devotional) return;
     try {
-      await request(`/devotionals/${devotional.id}/log`, { 
+      await request(`/devotionals/${devotional.id}/log`, {
         method: 'POST',
         body: JSON.stringify({ completed: true })
       });
@@ -1006,8 +1097,8 @@ const DevotionalScreen = ({ devotional, loading }) => {
           <p>{devotional.action_step}</p>
         </section>
 
-        <button 
-          className={`complete-button ${completed ? 'completed' : ''}`} 
+        <button
+          className={`complete-button ${completed ? 'completed' : ''}`}
           onClick={markComplete}
           disabled={completed}
         >
@@ -1041,9 +1132,8 @@ const ScripturesScreen = () => {
       setTopics(data.topics || data || []);
     } catch (err) {
       console.error('Failed to load topics:', err);
-      // Fallback topics
       setTopics([
-        { id: 1, name: 'Anxiety' }, { id: 2, name: 'Depression' }, 
+        { id: 1, name: 'Anxiety' }, { id: 2, name: 'Depression' },
         { id: 3, name: 'Faith' }, { id: 4, name: 'Fear' },
         { id: 5, name: 'Forgiveness' }, { id: 6, name: 'Grace' },
         { id: 7, name: 'Gratitude' }, { id: 8, name: 'Grief' },
@@ -1062,7 +1152,7 @@ const ScripturesScreen = () => {
   const searchScriptures = async (e) => {
     e?.preventDefault();
     if (!query.trim()) return;
-    
+
     setLoading(true);
     setView('search');
     setSelectedTopic(null);
@@ -1122,8 +1212,8 @@ const ScripturesScreen = () => {
             <h2>Browse by Topic</h2>
             <div className="topics-grid">
               {topics.map(topic => (
-                <button 
-                  key={topic.id} 
+                <button
+                  key={topic.id}
                   className="topic-chip"
                   onClick={() => loadTopicVerses(topic)}
                 >
@@ -1139,9 +1229,9 @@ const ScripturesScreen = () => {
             <button className="back-link" onClick={() => { setView('topics'); setResults([]); setSelectedTopic(null); }}>
               ← Back to Topics
             </button>
-            
+
             {selectedTopic && <h2 className="results-title">Verses about {selectedTopic}</h2>}
-            
+
             {loading ? (
               <div className="loading-state"><div className="small-spinner"/></div>
             ) : results.length === 0 ? (
@@ -1171,31 +1261,26 @@ const ScripturesScreen = () => {
 const PrayersScreen = () => {
   const { user } = useAuth();
   const { request } = useApi();
-  
-  // Main state
-  const [activeTab, setActiveTab] = useState('community'); // 'journal', 'community', 'public'
+
+  const [activeTab, setActiveTab] = useState('community');
   const [prayers, setPrayers] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Community state
+
   const [swCode, setSwCode] = useState('');
   const [communitySize, setCommunitySize] = useState(0);
   const [pendingRequests, setPendingRequests] = useState(0);
   const [connections, setConnections] = useState([]);
   const [pendingIncoming, setPendingIncoming] = useState([]);
-  
-  // UI state
+
   const [showForm, setShowForm] = useState(false);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
-  
-  // Form state
+
   const [newPrayer, setNewPrayer] = useState('');
   const [visibility, setVisibility] = useState('community');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [category, setCategory] = useState('');
-  
-  // Add friend state
+
   const [friendCode, setFriendCode] = useState('');
   const [friendSearch, setFriendSearch] = useState(null);
   const [friendError, setFriendError] = useState('');
@@ -1254,9 +1339,9 @@ const PrayersScreen = () => {
     try {
       await request('/prayers', {
         method: 'POST',
-        body: JSON.stringify({ 
-          content: newPrayer, 
-          visibility, 
+        body: JSON.stringify({
+          content: newPrayer,
+          visibility,
           is_anonymous: isAnonymous,
           category: category || null
         })
@@ -1273,7 +1358,7 @@ const PrayersScreen = () => {
   const prayFor = async (id) => {
     try {
       await request(`/prayers/${id}/pray`, { method: 'POST' });
-      setPrayers(prev => prev.map(p => 
+      setPrayers(prev => prev.map(p =>
         p.id === id ? { ...p, pray_count: (p.pray_count || 0) + 1, has_prayed: true } : p
       ));
     } catch (err) {
@@ -1287,7 +1372,7 @@ const PrayersScreen = () => {
         method: 'PATCH',
         body: JSON.stringify({ is_answered: true })
       });
-      setPrayers(prev => prev.map(p => 
+      setPrayers(prev => prev.map(p =>
         p.id === id ? { ...p, is_answered: true } : p
       ));
     } catch (err) {
@@ -1309,7 +1394,7 @@ const PrayersScreen = () => {
     setFriendLoading(true);
     setFriendError('');
     setFriendSearch(null);
-    
+
     try {
       const data = await request(`/community/search/${friendCode.trim().toUpperCase()}`);
       setFriendSearch(data);
@@ -1379,7 +1464,6 @@ const PrayersScreen = () => {
     }
   };
 
-  // Community Management Modal
   if (showCommunity) {
     return (
       <div className="prayers-screen">
@@ -1430,7 +1514,6 @@ const PrayersScreen = () => {
           )}
         </div>
 
-        {/* Add Friend Modal */}
         {showAddFriend && (
           <div className="modal-overlay" onClick={() => setShowAddFriend(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -1503,21 +1586,20 @@ const PrayersScreen = () => {
         </div>
       </div>
 
-      {/* Tab Switcher */}
       <div className="prayer-tabs">
-        <button 
+        <button
           className={`prayer-tab ${activeTab === 'journal' ? 'active' : ''}`}
           onClick={() => setActiveTab('journal')}
         >
-          📔 Journal
+          📓 Journal
         </button>
-        <button 
+        <button
           className={`prayer-tab ${activeTab === 'community' ? 'active' : ''}`}
           onClick={() => setActiveTab('community')}
         >
           👥 Community
         </button>
-        <button 
+        <button
           className={`prayer-tab ${activeTab === 'public' ? 'active' : ''}`}
           onClick={() => setActiveTab('public')}
         >
@@ -1525,7 +1607,6 @@ const PrayersScreen = () => {
         </button>
       </div>
 
-      {/* Create Prayer Form */}
       {showForm && (
         <form className="prayer-form" onSubmit={submitPrayer}>
           <textarea
@@ -1534,7 +1615,7 @@ const PrayersScreen = () => {
             placeholder={activeTab === 'journal' ? "Write in your prayer journal..." : "Share your prayer request..."}
             rows={4}
           />
-          
+
           <div className="category-chips">
             {categories.map(cat => (
               <button
@@ -1567,7 +1648,6 @@ const PrayersScreen = () => {
         </form>
       )}
 
-      {/* Prayers List */}
       <div className="prayers-list">
         {prayers.length === 0 ? (
           <div className="empty-state">
@@ -1580,7 +1660,7 @@ const PrayersScreen = () => {
               <>
                 <p>No community prayers yet</p>
                 <p className="empty-hint">
-                  {communitySize === 0 
+                  {communitySize === 0
                     ? "Add friends with their SW code to see their prayers"
                     : "Be the first to share a prayer with your community"
                   }
@@ -1627,7 +1707,7 @@ const PrayersScreen = () => {
                     </>
                   )}
                   {!prayer.is_own && (
-                    <button 
+                    <button
                       className={`pray-button ${prayer.has_prayed ? 'prayed' : ''}`}
                       onClick={() => prayFor(prayer.id)}
                       disabled={prayer.has_prayed}
@@ -1681,7 +1761,7 @@ const ProfileScreen = () => {
       <div className="profile-content">
         <section className="settings-section">
           <h2>Settings</h2>
-          
+
           {editing ? (
             <div className="edit-form">
               <div className="form-group">
