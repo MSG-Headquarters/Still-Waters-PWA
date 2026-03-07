@@ -6,6 +6,82 @@ import React, { useState, useEffect, useRef, createContext, useContext } from 'r
 const API_BASE = 'https://stillwaters.umbrassi.com/api';
 
 // ============================================
+// BIBLE BOOKS DATA
+// ============================================
+const BIBLE_BOOKS = {
+  oldTestament: [
+    { name: 'Genesis', abbr: 'Gen', chapters: 50 },
+    { name: 'Exodus', abbr: 'Exod', chapters: 40 },
+    { name: 'Leviticus', abbr: 'Lev', chapters: 27 },
+    { name: 'Numbers', abbr: 'Num', chapters: 36 },
+    { name: 'Deuteronomy', abbr: 'Deut', chapters: 34 },
+    { name: 'Joshua', abbr: 'Josh', chapters: 24 },
+    { name: 'Judges', abbr: 'Judg', chapters: 21 },
+    { name: 'Ruth', abbr: 'Ruth', chapters: 4 },
+    { name: '1 Samuel', abbr: '1Sam', chapters: 31 },
+    { name: '2 Samuel', abbr: '2Sam', chapters: 24 },
+    { name: '1 Kings', abbr: '1Kgs', chapters: 22 },
+    { name: '2 Kings', abbr: '2Kgs', chapters: 25 },
+    { name: '1 Chronicles', abbr: '1Chr', chapters: 29 },
+    { name: '2 Chronicles', abbr: '2Chr', chapters: 36 },
+    { name: 'Ezra', abbr: 'Ezra', chapters: 10 },
+    { name: 'Nehemiah', abbr: 'Neh', chapters: 13 },
+    { name: 'Esther', abbr: 'Esth', chapters: 10 },
+    { name: 'Job', abbr: 'Job', chapters: 42 },
+    { name: 'Psalms', abbr: 'Ps', chapters: 150 },
+    { name: 'Proverbs', abbr: 'Prov', chapters: 31 },
+    { name: 'Ecclesiastes', abbr: 'Eccl', chapters: 12 },
+    { name: 'Song of Solomon', abbr: 'Song', chapters: 8 },
+    { name: 'Isaiah', abbr: 'Isa', chapters: 66 },
+    { name: 'Jeremiah', abbr: 'Jer', chapters: 52 },
+    { name: 'Lamentations', abbr: 'Lam', chapters: 5 },
+    { name: 'Ezekiel', abbr: 'Ezek', chapters: 48 },
+    { name: 'Daniel', abbr: 'Dan', chapters: 12 },
+    { name: 'Hosea', abbr: 'Hos', chapters: 14 },
+    { name: 'Joel', abbr: 'Joel', chapters: 3 },
+    { name: 'Amos', abbr: 'Amos', chapters: 9 },
+    { name: 'Obadiah', abbr: 'Obad', chapters: 1 },
+    { name: 'Jonah', abbr: 'Jonah', chapters: 4 },
+    { name: 'Micah', abbr: 'Mic', chapters: 7 },
+    { name: 'Nahum', abbr: 'Nah', chapters: 3 },
+    { name: 'Habakkuk', abbr: 'Hab', chapters: 3 },
+    { name: 'Zephaniah', abbr: 'Zeph', chapters: 3 },
+    { name: 'Haggai', abbr: 'Hag', chapters: 2 },
+    { name: 'Zechariah', abbr: 'Zech', chapters: 14 },
+    { name: 'Malachi', abbr: 'Mal', chapters: 4 }
+  ],
+  newTestament: [
+    { name: 'Matthew', abbr: 'Matt', chapters: 28 },
+    { name: 'Mark', abbr: 'Mark', chapters: 16 },
+    { name: 'Luke', abbr: 'Luke', chapters: 24 },
+    { name: 'John', abbr: 'John', chapters: 21 },
+    { name: 'Acts', abbr: 'Acts', chapters: 28 },
+    { name: 'Romans', abbr: 'Rom', chapters: 16 },
+    { name: '1 Corinthians', abbr: '1Cor', chapters: 16 },
+    { name: '2 Corinthians', abbr: '2Cor', chapters: 13 },
+    { name: 'Galatians', abbr: 'Gal', chapters: 6 },
+    { name: 'Ephesians', abbr: 'Eph', chapters: 6 },
+    { name: 'Philippians', abbr: 'Phil', chapters: 4 },
+    { name: 'Colossians', abbr: 'Col', chapters: 4 },
+    { name: '1 Thessalonians', abbr: '1Thess', chapters: 5 },
+    { name: '2 Thessalonians', abbr: '2Thess', chapters: 3 },
+    { name: '1 Timothy', abbr: '1Tim', chapters: 6 },
+    { name: '2 Timothy', abbr: '2Tim', chapters: 4 },
+    { name: 'Titus', abbr: 'Titus', chapters: 3 },
+    { name: 'Philemon', abbr: 'Phlm', chapters: 1 },
+    { name: 'Hebrews', abbr: 'Heb', chapters: 13 },
+    { name: 'James', abbr: 'Jas', chapters: 5 },
+    { name: '1 Peter', abbr: '1Pet', chapters: 5 },
+    { name: '2 Peter', abbr: '2Pet', chapters: 3 },
+    { name: '1 John', abbr: '1John', chapters: 5 },
+    { name: '2 John', abbr: '2John', chapters: 1 },
+    { name: '3 John', abbr: '3John', chapters: 1 },
+    { name: 'Jude', abbr: 'Jude', chapters: 1 },
+    { name: 'Revelation', abbr: 'Rev', chapters: 22 }
+  ]
+};
+
+// ============================================
 // AUTH CONTEXT
 // ============================================
 const AuthContext = createContext(null);
@@ -255,6 +331,16 @@ const Icons = {
       <circle cx="18" cy="19" r="3"/>
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
       <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+  ),
+  ChevronLeft: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15,18 9,12 15,6"/>
+    </svg>
+  ),
+  ChevronRight: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9,6 15,12 9,18"/>
     </svg>
   )
 };
@@ -551,8 +637,8 @@ const HomeScreen = ({ onNavigate, devotional, devotionalLoading }) => {
             <button className="action-button" onClick={() => onNavigate('scriptures')}>
               <span className="action-icon"><Icons.Book/></span>
               <span className="action-text">
-                <strong>Scripture Search</strong>
-                <small>Find verses by topic</small>
+                <strong>Read the Bible</strong>
+                <small>Browse books & chapters</small>
               </span>
             </button>
 
@@ -1110,17 +1196,34 @@ const DevotionalScreen = ({ devotional, loading }) => {
 };
 
 // ============================================
-// SCRIPTURES SCREEN - MODERNIZED
+// SCRIPTURES SCREEN - WITH BIBLE READER
 // ============================================
 const ScripturesScreen = () => {
   const { request } = useApi();
+  const { user } = useAuth();
+  
+  // Tab state: 'read' for Bible Reader, 'search' for topics/search
+  const [activeTab, setActiveTab] = useState('read');
+  
+  // Bible Reader State
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+  const [chapterVerses, setChapterVerses] = useState([]);
+  const [readerView, setReaderView] = useState('books'); // 'books', 'chapters', 'reading'
+  const [testament, setTestament] = useState('new'); // 'old' or 'new'
+  const [readerLoading, setReaderLoading] = useState(false);
+  
+  // Search State
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [view, setView] = useState('topics');
+  const [searchView, setSearchView] = useState('topics');
   const [selectedTopic, setSelectedTopic] = useState(null);
+
+  // Get user's preferred Bible version
+  const bibleVersion = user?.preferred_bible_version?.toLowerCase() || 'esv';
 
   useEffect(() => {
     loadTopics();
@@ -1154,7 +1257,7 @@ const ScripturesScreen = () => {
     if (!query.trim()) return;
 
     setLoading(true);
-    setView('search');
+    setSearchView('results');
     setSelectedTopic(null);
     try {
       const data = await request(`/scriptures/search?q=${encodeURIComponent(query)}`);
@@ -1169,7 +1272,7 @@ const ScripturesScreen = () => {
 
   const loadTopicVerses = async (topic) => {
     setLoading(true);
-    setView('search');
+    setSearchView('results');
     setSelectedTopic(topic.name);
     try {
       const data = await request(`/scriptures/topics/${topic.id}`);
@@ -1182,17 +1285,169 @@ const ScripturesScreen = () => {
     }
   };
 
-  if (initialLoading) {
-    return <LoadingScreen message="Loading scriptures..."/>;
-  }
+  // Bible Reader Functions
+  const selectBook = (book) => {
+    setSelectedBook(book);
+    setReaderView('chapters');
+  };
 
-  return (
-    <div className="scriptures-screen">
-      <div className="scriptures-header">
-        <h1>Scripture Search</h1>
-        <p className="scriptures-subtitle">Find verses that speak to your heart</p>
-      </div>
+  const selectChapter = async (chapterNum) => {
+    setSelectedChapter(chapterNum);
+    setReaderLoading(true);
+    setReaderView('reading');
+    
+    try {
+      // Try to load from API
+      const reference = `${selectedBook.name} ${chapterNum}`;
+      const data = await request(`/scriptures/reference/${encodeURIComponent(reference)}`);
+      const verses = data.verses || data.chapter?.verses || data || [];
+      setChapterVerses(Array.isArray(verses) ? verses : []);
+    } catch (err) {
+      console.error('Failed to load chapter:', err);
+      // If API fails, show empty
+      setChapterVerses([]);
+    } finally {
+      setReaderLoading(false);
+    }
+  };
 
+  const navigateChapter = (direction) => {
+    const newChapter = selectedChapter + direction;
+    if (newChapter >= 1 && newChapter <= selectedBook.chapters) {
+      selectChapter(newChapter);
+    }
+  };
+
+  const getVerseText = (verse) => {
+    return verse[`text_${bibleVersion}`] || verse.text_esv || verse.text || verse.content || '';
+  };
+
+  // Render Bible Reader
+  const renderBibleReader = () => {
+    if (readerView === 'books') {
+      return (
+        <div className="bible-reader">
+          <div className="testament-tabs">
+            <button 
+              className={`testament-tab ${testament === 'old' ? 'active' : ''}`}
+              onClick={() => setTestament('old')}
+            >
+              Old Testament
+            </button>
+            <button 
+              className={`testament-tab ${testament === 'new' ? 'active' : ''}`}
+              onClick={() => setTestament('new')}
+            >
+              New Testament
+            </button>
+          </div>
+          
+          <div className="books-grid">
+            {(testament === 'old' ? BIBLE_BOOKS.oldTestament : BIBLE_BOOKS.newTestament).map(book => (
+              <button 
+                key={book.name} 
+                className="book-button"
+                onClick={() => selectBook(book)}
+              >
+                {book.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (readerView === 'chapters') {
+      return (
+        <div className="bible-reader">
+          <button className="back-link" onClick={() => setReaderView('books')}>
+            ← Back to Books
+          </button>
+          
+          <h2 className="book-title">{selectedBook.name}</h2>
+          <p className="chapter-count">{selectedBook.chapters} Chapters</p>
+          
+          <div className="chapters-grid">
+            {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map(num => (
+              <button 
+                key={num} 
+                className="chapter-button"
+                onClick={() => selectChapter(num)}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (readerView === 'reading') {
+      return (
+        <div className="bible-reader reading-view">
+          <div className="reading-header">
+            <button className="back-link" onClick={() => setReaderView('chapters')}>
+              ← {selectedBook.name}
+            </button>
+            <h2>{selectedBook.name} {selectedChapter}</h2>
+            <span className="version-badge">{bibleVersion.toUpperCase()}</span>
+          </div>
+          
+          <div className="chapter-navigation">
+            <button 
+              className="nav-arrow"
+              onClick={() => navigateChapter(-1)}
+              disabled={selectedChapter <= 1}
+            >
+              <Icons.ChevronLeft /> Prev
+            </button>
+            <span className="chapter-indicator">Chapter {selectedChapter}</span>
+            <button 
+              className="nav-arrow"
+              onClick={() => navigateChapter(1)}
+              disabled={selectedChapter >= selectedBook.chapters}
+            >
+              Next <Icons.ChevronRight />
+            </button>
+          </div>
+
+          <div className="verses-container">
+            {readerLoading ? (
+              <div className="loading-state"><div className="small-spinner"/></div>
+            ) : chapterVerses.length === 0 ? (
+              <div className="empty-state">
+                <p className="coming-soon-message">
+                  📖 Scripture content for {selectedBook.name} {selectedChapter} is being prepared.
+                </p>
+                <p className="hint-text">
+                  In the meantime, try searching for specific verses or browse by topic.
+                </p>
+                <button 
+                  className="switch-tab-button"
+                  onClick={() => setActiveTab('search')}
+                >
+                  Search Scriptures
+                </button>
+              </div>
+            ) : (
+              <div className="chapter-text">
+                {chapterVerses.map((verse, i) => (
+                  <span key={verse.id || i} className="verse">
+                    <sup className="verse-num">{verse.verse_number || verse.verseNumber || i + 1}</sup>
+                    {getVerseText(verse)}{' '}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+  };
+
+  // Render Search/Topics
+  const renderSearch = () => (
+    <div className="search-section">
       <form className="search-form" onSubmit={searchScriptures}>
         <div className="search-input-wrapper">
           <Icons.Search/>
@@ -1206,50 +1461,78 @@ const ScripturesScreen = () => {
         <button type="submit" className="search-submit" disabled={!query.trim()}>Search</button>
       </form>
 
-      <div className="scriptures-content">
-        {view === 'topics' && (
-          <div className="topics-section">
-            <h2>Browse by Topic</h2>
-            <div className="topics-grid">
-              {topics.map(topic => (
-                <button
-                  key={topic.id}
-                  className="topic-chip"
-                  onClick={() => loadTopicVerses(topic)}
-                >
-                  {topic.name}
-                </button>
+      {searchView === 'topics' && (
+        <div className="topics-section">
+          <h2>Browse by Topic</h2>
+          <div className="topics-grid">
+            {topics.map(topic => (
+              <button
+                key={topic.id}
+                className="topic-chip"
+                onClick={() => loadTopicVerses(topic)}
+              >
+                {topic.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {searchView === 'results' && (
+        <div className="search-results">
+          <button className="back-link" onClick={() => { setSearchView('topics'); setResults([]); setSelectedTopic(null); }}>
+            ← Back to Topics
+          </button>
+
+          {selectedTopic && <h2 className="results-title">Verses about {selectedTopic}</h2>}
+
+          {loading ? (
+            <div className="loading-state"><div className="small-spinner"/></div>
+          ) : results.length === 0 ? (
+            <div className="empty-state">
+              <p>No verses found. Try a different search term.</p>
+            </div>
+          ) : (
+            <div className="verses-list">
+              {results.map((verse, i) => (
+                <div key={verse.id || i} className="verse-card">
+                  <p className="verse-text">{getVerseText(verse)}</p>
+                  <cite className="verse-reference">{verse.reference}</cite>
+                </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
+    </div>
+  );
 
-        {view === 'search' && (
-          <div className="search-results">
-            <button className="back-link" onClick={() => { setView('topics'); setResults([]); setSelectedTopic(null); }}>
-              ← Back to Topics
-            </button>
+  if (initialLoading) {
+    return <LoadingScreen message="Loading scriptures..."/>;
+  }
 
-            {selectedTopic && <h2 className="results-title">Verses about {selectedTopic}</h2>}
+  return (
+    <div className="scriptures-screen">
+      <div className="scriptures-header">
+        <h1>Scripture</h1>
+        <div className="tab-switcher">
+          <button 
+            className={`tab-button ${activeTab === 'read' ? 'active' : ''}`}
+            onClick={() => setActiveTab('read')}
+          >
+            📖 Read
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'search' ? 'active' : ''}`}
+            onClick={() => setActiveTab('search')}
+          >
+            🔍 Search
+          </button>
+        </div>
+      </div>
 
-            {loading ? (
-              <div className="loading-state"><div className="small-spinner"/></div>
-            ) : results.length === 0 ? (
-              <div className="empty-state">
-                <p>No verses found. Try a different search term.</p>
-              </div>
-            ) : (
-              <div className="verses-list">
-                {results.map((verse, i) => (
-                  <div key={verse.id || i} className="verse-card">
-                    <p className="verse-text">{verse.text_esv || verse.text || verse.content}</p>
-                    <cite className="verse-reference">{verse.reference}</cite>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+      <div className="scriptures-content">
+        {activeTab === 'read' ? renderBibleReader() : renderSearch()}
       </div>
     </div>
   );

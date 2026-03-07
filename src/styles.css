@@ -1357,3 +1357,277 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
     font-size: 16px; /* Prevents zoom */
   }
 }
+
+/* ============================================
+   BIBLE READER STYLES
+   Add these to the end of your styles.css
+   ============================================ */
+
+/* Tab Switcher */
+.tab-switcher {
+  display: flex;
+  gap: var(--space-sm);
+  background: rgba(245, 240, 225, 0.05);
+  padding: var(--space-xs);
+  border-radius: var(--radius-full);
+  margin-top: var(--space-md);
+}
+
+.tab-button {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+}
+
+.tab-button.active {
+  background: var(--gold);
+  color: var(--deep-navy);
+}
+
+.tab-button:hover:not(.active) {
+  color: var(--parchment);
+}
+
+/* Bible Reader Container */
+.bible-reader {
+  padding: var(--space-md) 0;
+}
+
+/* Testament Tabs */
+.testament-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.testament-tab {
+  flex: 1;
+  padding: var(--space-md);
+  background: rgba(245, 240, 225, 0.05);
+  border: 1px solid rgba(196, 169, 98, 0.15);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.testament-tab.active {
+  background: rgba(196, 169, 98, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.testament-tab:hover:not(.active) {
+  border-color: rgba(196, 169, 98, 0.3);
+  color: var(--parchment);
+}
+
+/* Books Grid */
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+
+.book-button {
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid rgba(245, 240, 225, 0.05);
+  border-radius: var(--radius-md);
+  color: var(--parchment);
+  font-size: 0.9rem;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.book-button:hover {
+  background: rgba(196, 169, 98, 0.1);
+  border-color: rgba(196, 169, 98, 0.3);
+}
+
+/* Chapter Selection */
+.book-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 500;
+  color: var(--parchment);
+  margin-bottom: var(--space-xs);
+}
+
+.chapter-count {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-lg);
+}
+
+.chapters-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-sm);
+}
+
+.chapter-button {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid rgba(245, 240, 225, 0.05);
+  border-radius: var(--radius-md);
+  color: var(--parchment);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.chapter-button:hover {
+  background: rgba(196, 169, 98, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Reading View */
+.reading-view {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--nav-height) - var(--safe-bottom) - 200px);
+}
+
+.reading-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.reading-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: var(--parchment);
+  flex: 1;
+}
+
+.version-badge {
+  padding: var(--space-xs) var(--space-sm);
+  background: rgba(196, 169, 98, 0.15);
+  border-radius: var(--radius-sm);
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Chapter Navigation */
+.chapter-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: rgba(245, 240, 225, 0.03);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.nav-arrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--gold);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+  background: transparent;
+  border: none;
+}
+
+.nav-arrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+.nav-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.chapter-indicator {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Verses Container */
+.verses-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: var(--space-xl);
+}
+
+.chapter-text {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  line-height: 2;
+  color: var(--parchment);
+}
+
+.verse {
+  display: inline;
+}
+
+.verse-num {
+  color: var(--gold);
+  font-size: 0.7em;
+  font-weight: 600;
+  margin-right: 2px;
+  vertical-align: super;
+}
+
+/* Coming Soon / Empty State for Reading */
+.coming-soon-message {
+  font-size: 1.1rem;
+  color: var(--parchment);
+  margin-bottom: var(--space-sm);
+}
+
+.hint-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.switch-tab-button {
+  padding: var(--space-md) var(--space-xl);
+  background: rgba(196, 169, 98, 0.15);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  color: var(--gold);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.switch-tab-button:hover {
+  background: rgba(196, 169, 98, 0.25);
+}
+
+/* Search Section within Scriptures */
+.search-section {
+  padding: 0;
+}
+
+.search-section .search-form {
+  margin-bottom: var(--space-lg);
+}
+
+.empty-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
