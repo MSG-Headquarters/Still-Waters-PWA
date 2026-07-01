@@ -429,8 +429,8 @@ const SplashScreen = ({ onComplete }) => {
       </div>
       <div className="splash-content">
         <h1 className="splash-title">
-          <span className={`splash-word still ${wordsVisible.includes(0) ? 'visible' : ''}`}>Still</span>
-          <span className={`splash-word waters ${wordsVisible.includes(1) ? 'visible' : ''}`}>Waters</span>
+          <span className="splash-word still visible">Still</span>
+          <span className="splash-word waters visible">Waters</span>
         </h1>
         <p className="splash-tagline">
           {taglineWords.map((word, i) => (
