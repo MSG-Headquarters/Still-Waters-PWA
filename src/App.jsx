@@ -5,6 +5,16 @@ import React, { useState, useEffect, useRef, createContext, useContext } from 'r
 // ============================================
 const API_BASE = 'https://stillwaters.umbrassi.com/api';
 
+// "Sign in with Sunday" mints a synthetic, one-way carrier email that must never
+// be shown. isShadowEmail flags it; displayEmail returns a dignified label for
+// Sunday users and the real address for password users. Reach for these anywhere
+// an email might render.
+const SHADOW_EMAIL_DOMAIN = '@cpid.stillwaters.umbrassi.com';
+const isShadowEmail = (email) =>
+  typeof email === 'string' && email.endsWith(SHADOW_EMAIL_DOMAIN);
+const displayEmail = (user) =>
+  isShadowEmail(user?.email) ? 'Signed in with Sunday' : user?.email;
+
 // ============================================
 // BIBLE BOOKS DATA
 // ============================================
@@ -92,6 +102,21 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('sw_token'));
   const [loading, setLoading] = useState(true);
+
+  // "Sign in with Sunday" returns via redirect with the app JWT in the URL
+  // fragment (#token=...). Capture it once on load, store it exactly like a
+  // normal login token, then strip the hash so it never lingers in history.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('token=')) {
+      const t = new URLSearchParams(hash.slice(1)).get('token');
+      if (t) {
+        localStorage.setItem('sw_token', t);
+        setToken(t);
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -560,6 +585,20 @@ const AuthScreen = () => {
             )}
           </button>
         </form>
+
+        {mode !== 'forgot' && (
+          <div className="auth-divider">or</div>
+        )}
+
+        {mode !== 'forgot' && (
+          <button
+            type="button"
+            className="auth-button sunday-signin-btn"
+            onClick={() => { window.location.href = `${API_BASE}/auth/sunday/authorize`; }}
+          >
+            Sign in with Sunday
+          </button>
+        )}
 
         <div className="auth-switch">
           {mode === 'login' && (
@@ -2038,7 +2077,7 @@ const ProfileScreen = () => {
           {(user?.display_name || user?.displayName || 'U')[0].toUpperCase()}
         </div>
         <h1>{user?.display_name || user?.displayName || 'User'}</h1>
-        <p className="profile-email">{user?.email}</p>
+        <p className="profile-email">{displayEmail(user)}</p>
       </div>
 
       <div className="profile-content">

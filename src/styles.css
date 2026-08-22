@@ -371,6 +371,32 @@ input, textarea, select { font-family: inherit; font-size: inherit; }
 
 .auth-button:disabled { opacity: 0.7; }
 
+/* Sunday sign-in sits under the primary submit, so it reads as the secondary
+   path: same shape, outlined instead of filled gold. */
+.sunday-signin-btn {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  color: rgba(255,255,255,0.45);
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+}
+
 .auth-switch {
   text-align: center;
   margin-top: var(--space-xl);
